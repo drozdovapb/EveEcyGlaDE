@@ -44,7 +44,7 @@ volcanoplot <- function(merged, thiscolor, thisalpha = 0.3) {
 }
 
 select.metazoa <- function(tbl, qq) {
-    tbl$taxon <- tbl$V13
+    #tbl$taxon <- tbl$V13
     evem <- merge(x = tbl, y=qq, by="taxon", all.x=T, all.y=F)
     evem_metazoa <- evem[evem$kingdom==33208 & !is.na(evem$kingdom),]
     return(evem_metazoa)
@@ -52,7 +52,7 @@ select.metazoa <- function(tbl, qq) {
 
 
 deselect.contaminants <- function(tbl, qq) {
-    tbl$taxon <- tbl$V13
+    #tbl$taxon <- tbl$V13
     evem <- merge(x = tbl, y=qq, by="taxon", all.x=T, all.y=F)
     evem_decont <- evem[evem$kingdom==33208 | is.na(evem$kingdom),] #NA also appears here, so not blasted should be retained...
     return(evem_decont)
@@ -195,13 +195,17 @@ filterTaxon <- function(thispecies, theseconditions) {
   
   
   merged <- merge(y = fa[,c(1:3,7:9,22)], x=premerged, all.x=T, all.y=F , by="gene")
-  mergedOrdered <- merged[order(merged$log2FoldChange),]
   
-  write.table(mergedOrdered[,c("gene","baseMean","log2FoldChange", "padj", "log10padj", "V13", "V14")], paste0(thispecies,theseconditions[2],"_annot.csv"))
+  #rename
+  names(merged)[which(names(merged) == "V13")] <- "taxon"
+  names(merged)[which(names(merged) == "V14")] <- "best.nr.hit.diamond"
+  
+  mergedOrdered <- merged[order(merged$log2FoldChange),]
+  write.csv(mergedOrdered, paste0(thispecies,theseconditions[2],"_annot.csv"))
   
   de <- mergedOrdered[abs(mergedOrdered$log2FoldChange) > 3 & mergedOrdered$padj < 0.0001,]
   de <- de[complete.cases(de),]
-  write.table(de[,c("gene","baseMean","log2FoldChange", "padj", "log10padj", "V14")], paste0(thispecies,theseconditions[2],"_annot_de.csv"))
+  write.table(de, paste0(thispecies,theseconditions[2],"_annot_de.csv"))
   
   p1 <- volcanoplot(merged, thiscolor)
    ggsave(paste0(thispecies,theseconditions[2],".png"), 
@@ -222,11 +226,11 @@ filterTaxon <- function(thispecies, theseconditions) {
   #33208
   merged.metazoa <- select.metazoa(merged, qq)
   merged.metazoa <- merged.metazoa[order(merged.metazoa$log2FoldChange),]
-  write.csv(merged.metazoa[,c("gene","baseMean","log2FoldChange", "padj", "log10padj", "V14")], paste0(thispecies,theseconditions[2],"_metazoa.csv"))
+  write.csv(merged.metazoa, paste0(thispecies,theseconditions[2],"_metazoa.csv"))
   
   merged.metazoa.de <- merged.metazoa[abs(merged.metazoa$log2FoldChange) > 3 & merged.metazoa$padj < 0.001,]    
   merged.metazoa.de <- merged.metazoa.de[complete.cases(merged.metazoa.de),]
-  write.csv(merged.metazoa.de[,c("gene","baseMean","log2FoldChange", "padj", "log10padj", "V14")],
+  write.csv(merged.metazoa.de,
             paste0(thispecies,theseconditions[2],"_metazoa_de.csv"))
   
   p2 <- volcanoplot(merged.metazoa, thiscolor) + 
@@ -238,11 +242,11 @@ filterTaxon <- function(thispecies, theseconditions) {
   
   merged.decont <- deselect.contaminants(merged, qq)
   merged.decont <- merged.decont[order(merged.decont$log2FoldChange),]
-  write.csv(merged.decont[,c("gene","baseMean","log2FoldChange", "padj", "log10padj", "V14")], paste0(thispecies,theseconditions[2],"_decont.csv"))
+  write.csv(merged.decont, paste0(thispecies,theseconditions[2],"_decont.csv"))
   
   merged.decont.de <- merged.decont[abs(merged.decont$log2FoldChange) > 3 & merged.decont$padj < 0.001,]    
   merged.decont.de <- merged.decont.de[complete.cases(merged.decont.de$gene),]
-  write.csv(merged.decont.de[,c("gene","baseMean","log2FoldChange", "padj", "log10padj", "V14")],
+  write.csv(merged.decont.de,
             paste0(thispecies,theseconditions[2],"_decont_de.csv"))
   
   p3 <- volcanoplot(merged.decont, thiscolor) + 
