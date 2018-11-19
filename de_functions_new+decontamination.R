@@ -203,9 +203,9 @@ filterTaxon <- function(thispecies, theseconditions) {
   mergedOrdered <- merged[order(merged$log2FoldChange),]
   write.csv(mergedOrdered, paste0(thispecies,theseconditions[2],"_annot.csv"))
   
-  de <- mergedOrdered[abs(mergedOrdered$log2FoldChange) > 3 & mergedOrdered$padj < 0.0001,]
+  de <- mergedOrdered[abs(mergedOrdered$log2FoldChange) > 3 & mergedOrdered$padj < 0.001,]
   de <- de[complete.cases(de),]
-  write.table(de, paste0(thispecies,theseconditions[2],"_annot_de.csv"))
+  write.csv(de, paste0(thispecies,theseconditions[2],"_annot_de.csv"))
   
   p1 <- volcanoplot(merged, thiscolor)
    ggsave(paste0(thispecies,theseconditions[2],".png"), 
