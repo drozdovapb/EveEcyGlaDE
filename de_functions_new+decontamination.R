@@ -171,12 +171,13 @@ filterTaxon <- function(thispecies, theseconditions) {
   resOrdered <- read.csv(paste0(thispecies,theseconditions[2],"_ordered.csv"), stringsAsFactors = F)
   
   ##Merge with 'annotation'
-  diamond <- read.delim(
+
+  #Annotation (best blast hit + also taxonomical information)
+    diamond <- read.delim(
     #        paste0("/media/main/sandbox/drozdovapb/DE/annotation/", thisassembly, ".diamond.tsv"), 
     paste0("/run/media/polina/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"),
 #    paste0("/media/drozdovapb/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"), 
     head=F, stringsAsFactors = F)
-  ##str(diamond)
   names(diamond)[1] <- "gene"
   diamond$V13 <- sapply(strsplit(diamond$V13, split=";"), '[', 1)
   #names(res)[1] <- "gene"
@@ -186,13 +187,13 @@ filterTaxon <- function(thispecies, theseconditions) {
   
   premerged <- merge(y = diamond[,c(1,13,14)], x=as.data.frame(resOrdered), all.x=T, all.y=F , by="gene")
   
+  #Annotation made by FunctionAnnotator  
   fa <- read.delim(
     #        paste0("/media/main/sandbox/drozdovapb/DE/annotation/", thisassembly, ".diamond.tsv"), 
     paste0("/run/media/polina/Elements/transcriptome/DE/3-annotation/", thisassembly, "_AnnotationTable.txt"),
     #    paste0("/media/drozdovapb/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"), 
     head=T, stringsAsFactors = F)
   names(fa)[1] <- "gene"
-  
   
   merged <- merge(y = fa[,c(1:3,7:9,22)], x=premerged, all.x=T, all.y=F , by="gene")
   
@@ -201,21 +202,18 @@ filterTaxon <- function(thispecies, theseconditions) {
   names(merged)[which(names(merged) == "V14")] <- "best.nr.hit.diamond"
   
   mergedOrdered <- merged[order(merged$log2FoldChange),]
+  #remove the genes with unidentifiable padj, or they will colonize the downstream things
+  mergedOrdered <- mergedOrdered[complete.cases(mergedOrdered$padj),]
   write.csv(mergedOrdered, paste0(thispecies,theseconditions[2],"_annot.csv"))
   
   de <- mergedOrdered[abs(mergedOrdered$log2FoldChange) > 3 & mergedOrdered$padj < 0.001,]
-  de <- de[complete.cases(de),]
   write.csv(de, paste0(thispecies,theseconditions[2],"_annot_de.csv"))
   
   p1 <- volcanoplot(merged, thiscolor)
    ggsave(paste0(thispecies,theseconditions[2],".png"), 
-    #      #p1, type = "cairo", width = 3, height = 3)
-     #     #p1, device = "png", width = 3, height = 3)
-      #    #p1, width = 3, height = 3)
-          p1, width = 3, device="png", height = 3)
+            p1, width = 3, device="png", height = 3)
   
-  #}
-  
+
   ####qq <- getTaxonomy(thisassembly)
   ####qq should be counted outside of this function.
   
@@ -224,12 +222,13 @@ filterTaxon <- function(thispecies, theseconditions) {
   #diamond <- read.delim("../../EveBCd6T24T_deep_FR.diamond.tsv", head=F, stringsAsFactors = F)
   
   #33208
-  merged.metazoa <- select.metazoa(merged, qq)
+  merged.metazoa <- select.metazoa(mergedOrdered, qq)
   merged.metazoa <- merged.metazoa[order(merged.metazoa$log2FoldChange),]
+  #merged.metazoa <- merged.metazoa[complete.cases(merged.metazoa$padj),] #shouldn't be important now
   write.csv(merged.metazoa, paste0(thispecies,theseconditions[2],"_metazoa.csv"))
   
   merged.metazoa.de <- merged.metazoa[abs(merged.metazoa$log2FoldChange) > 3 & merged.metazoa$padj < 0.001,]    
-  merged.metazoa.de <- merged.metazoa.de[complete.cases(merged.metazoa.de),]
+  #merged.metazoa.de <- merged.metazoa.de[complete.cases(merged.metazoa.de),] #again, sholdn't make any diff now
   write.csv(merged.metazoa.de,
             paste0(thispecies,theseconditions[2],"_metazoa_de.csv"))
   
@@ -245,7 +244,7 @@ filterTaxon <- function(thispecies, theseconditions) {
   write.csv(merged.decont, paste0(thispecies,theseconditions[2],"_decont.csv"))
   
   merged.decont.de <- merged.decont[abs(merged.decont$log2FoldChange) > 3 & merged.decont$padj < 0.001,]    
-  merged.decont.de <- merged.decont.de[complete.cases(merged.decont.de$gene),]
+  merged.decont.de <- merged.decont.de[complete.cases(merged.decont.de$gene),] #but this is important!
   write.csv(merged.decont.de,
             paste0(thispecies,theseconditions[2],"_decont_de.csv"))
   
