@@ -1,47 +1,72 @@
 ####This script is for GO terms
 
+###reading options
 options(stringsAsFactors = F)
+### graphical options
+#options(device='x11')
+#grDevices::X11.options(type='cairo')
+options(bitmapType='cairo')
+
+###libraries
+require(plyr)
+require(reshape2)
+require(ggplot2)
+library(RColorBrewer)
 library(topGO)
 
+#scale_color_manual(values=c("#000000", "#E69F00", "#56B4E9", "#009E73",
+#"#F0E442", "#0072B2", "#D55E00", "#CC79A7"))
+#black orange sky_blue green yellow blue vermillion reddish_purple
+
+
+###This function is for list of genes => enriched GO terms. Supports custom FC cutoff.
+##testing set
+#filename = "EcyT12_annot.csv"; sep = ","; upORdown = "up"; gocat = "BP"
+#logFCthreshold = 1; padj.threshold = 0.001; writeGenes = T
+#fa_filename = "~/Documents/transcriptome_annotation/EcyBCdTP1_cor_AnnotationTable.txt"
+
 GOenrichment <- function(filename, sep = ",", upORdown = "up", gocat = "BP", 
-                         FA_filename = "/homes/brauerei/polina/Documents/transcriptome_annotation/EveBCdTP_AnnotationTableFull.txt") {
+                         #FA_filename = "EveBCdTP_AnnotationTableFull.txt", #in case GO annotations aren't included
+                          logFCthreshold = 3, #change to any FC threshold
+                          padj.threshold = 0.001, #change to any adjusted p-value threshold
+                          writeGenes = F) { #also write all genes for every term
   #read full data set
   full_list <- read.csv(filename, sep = sep)
   #rename variables we'll need later (probably...)
   #names(full_list)[3] <- "Sequence.Name"
   #names(full_list)[7] <- "Best diamond hit"
   #annotation <- read.delim(FA_filename) #don't need it if the file contains annotation
-  ##merge tables
   #withAnnotation <- merge(x = annotation, y=full_list[,c(2,3,4,7)], all.x=F, all.y=F , by="Sequence.Name")
   #get de genes
   #either upregs
   if (upORdown == "up") {
-    de <- full_list[full_list$log2FoldChange > 3 & full_list$padj < 0.001,]
+    de <- full_list[full_list$log2FoldChange > logFCthreshold & full_list$padj < padj.threshold,]
     #get rid of NAs & get names only
     de <- de[complete.cases(de$padj), "gene"] 
   }
   #or downregs
   if (upORdown == "down") {
-    de <- full_list[full_list$log2FoldChange < -3 & full_list$padj < 0.001,]
+    de <- full_list[full_list$log2FoldChange < -1 * logFCthreshold & full_list$padj < padj.threshold,]
     #get rid of NAs & get names only
     de <- de[complete.cases(de$padj), "gene"]
   }  
-  
-  
   
   #get GO terms
   #if (gocat == "BP") BP <- withAnnotation[,c("Sequence.Name", "GO.Biological.Process")]
   #if (gocat == "MF") BP <- withAnnotation[,c("Sequence.Name", "GO.Molecular.Function")]
   if (gocat == "BP") BP <- full_list[,c("gene", "GO.Biological.Process")]
   if (gocat == "MF") BP <- full_list[,c("gene", "GO.Molecular.Function")]
+  if (gocat == "CC") BP <- full_list[,c("gene", "GO.Cellular.Component")]
   
   #get only non-empty ones (I just cannot analyze all the rest)
   if (gocat == "BP") BPGO <- BP[BP$GO.Biological.Process != "-",]
   if (gocat == "MF")BPGO <- BP[BP$GO.Molecular.Function != "-",]
+  if (gocat == "CC") BPGO <- BP[BP$GO.Cellular.Component != "-",] 
   #get all GO terms in machine-readable way (in a list + without names, only numbers)
   
   if (gocat == "BP") GOs <- strsplit(BPGO$GO.Biological.Process, split = "| ", fixed = T)
   if (gocat == "MF") GOs <- strsplit(BPGO$GO.Molecular.Function, split = "| ", fixed = T)
+  if (gocat == "CC") GOs <- strsplit(BPGO$GO.Cellular.Component, split = "| ", fixed = T)
   names(GOs) <- BPGO$gene
   
   GOsTop <- lapply(X = GOs, function(x) gsub(" .*", "", x)) #remove human-readable name
@@ -59,146 +84,35 @@ GOenrichment <- function(filename, sep = ",", upORdown = "up", gocat = "BP",
   f <- runTest(GOdata, algorithm = "elim", statistic = "fisher") 
   #from the manual: We like to interpret the p-values returned by these methods as corrected or not affected by multiple testing.    
   signif_at_0.001 <- sum(f@score < 0.001)
-  allRes <- GenTable(object = GOdata, f, topNodes = signif_at_0.001, numChar = 100)        
-  write.csv(allRes, paste0("GO/", filename, "GO", upORdown, ".csv"))
+  signif_at_0.05 <- sum(f@score < 0.05)
+  allRes <- GenTable(object = GOdata, f, numChar = 100, topNodes = signif_at_0.05) #topNodes = signif_at_0.001 #nope! here without sorting
+  allRes <- allRes[allRes$Significant > 1, ] #at least two genes. 
+  
+  if (writeGenes & nrow(allRes)) {
+    allRes$Genes <- NA
+    for (i in 1:length(allRes$Genes)) {
+        temp <- genesInTerm(GOdata, allRes$GO.ID[i])[[1]]
+        tempde <- temp[temp %in% de]
+        namestempde <- full_list[full_list$gene %in% tempde, "best.nr.hit.diamond"]
+        allRes$Genes[i] <- paste(namestempde, collapse = ", ")
+    }
+  }
+  
+  #output
+  dir.name <- paste0("GO_FC", logFCthreshold, "_padj_", padj.threshold, "_", gocat)
+  if (!dir.name %in% dir()) dir.create(dir.name)
+  #full table
+  names(allRes)[6] <- "p-value"
+  write.csv(allRes, paste0(dir.name, "/", filename, "GO", upORdown, "_all", ".csv"))
+  
+  Res <- allRes[1:signif_at_0.001, ]  #allRes$`p-value` < 0.001, doesn't work properly
+  
+  write.csv(Res, paste0(dir.name, "/", filename, "GO", upORdown, ".csv"))
   return(allRes)
 }
 
-
-
-# #Example code: get genes associated with a particular GO term
-# allGO <- genesInTerm(GOdata)
-# cdgenes <- allGO["GO:0046686"]
-# allcdgenes <- full_list[cdgenes$`GO:0046686` %in% full_list$Sequence.Name,]
-# decdgenes <- allcdgenes[allcdgenes$padj < 0.001 & allcdgenes$log2FoldChange > 3,]
-
-
-#change here for another directory
-#setwd("~/Documents/Paper1_stresses/data_tables/")
-#FA_filename = "/homes/brauerei/polina/Documents/transcriptome_annotation/EveBCdTP_AnnotationTableFull.txt"
-# setwd("~/Documents/Paper1_stresses/data_tables/by_eve")
-# FA_filename = "../../../transcriptome_annotation/EveBCdTP1_cor/EveBCdTP1_cor_AnnotationTable.txt"
-## For G. lacustris (assembly 2)
-#setwd("~/Documents/Paper1_stresses/data_tables/full_assemblies_each_by_own/")
-#FA_filename = "../../../transcriptome_annotation/GlaBCdTP1_cor2/GlaBCdTP1_cor2_AnnotationTable.txt"
-
-setwd("~/Documents/Paper1_stresses/data_tables/full_assemblies_each_by_own/")
-fa_filename = "~/Documents/transcriptome_annotation/EcyBCdTP1_cor_AnnotationTable.txt"
-
-setwd("~/Documents/Paper1_stresses/data_tables/ecy_reduced/")
-fa_filename = "~/Documents/transcriptome_annotation/EcyBCdTP1_cor_AnnotationTable.txt"
-
-for (file in dir()) GOenrichment(filename = file, FA_filename = fa_filename)
-for (file in dir()) GOenrichment(filename = file, FA_filename = fa_filename, upORdown = "down")
-
-
-
-setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/")
-
-for (file in dir()) {
-  if(grepl("csv", file)) {
-    fa_filename <- ifelse(startsWith(file, "Eve"), "~/Documents/transcriptome_annotation/EveBCdTP1_cor_AnnotationTable.txt",
-                          ifelse(startsWith(file, "Ecy"), "~/Documents/transcriptome_annotation/EcyBCdTP1_cor_AnnotationTable.txt",
-                                 ifelse(startsWith(file, "Gla"), "~/Documents/transcriptome_annotation/GlaBCdTP1_cor2_AnnotationTable.txt", "")))
-    GOenrichment(filename = file, FA_filename = fa_filename)
-    GOenrichment(filename = file, FA_filename = fa_filename, upORdown = "down")
-  }
-}
-
-
-GOenrichment(filename = "./EvePhB03_annot.csv", FA_filename = "~/Documents/transcriptome_annotation/EveBCdTP1_cor_AnnotationTable.txt")
-GOenrichment(filename = file, FA_filename = fa_filename, upORdown = "down")
-
-#setwd("~/Documents/Paper1_stresses/data_tables/full_assemblies_each_by_own/")
-
-for (file in dir()) {
-  fa_filename <- ifelse(startsWith(file, "Eve"), "~/Documents/transcriptome_annotation/EveBCdTP1_cor_AnnotationTable.txt",
-                        ifelse(startsWith(file, "Ecy"), "~/Documents/transcriptome_annotation/EcyBCdTP1_cor_AnnotationTable.txt",
-                               ifelse(startsWith(file, "Gla"), "~/Documents/transcriptome_annotation/GlaBCdTP1_cor2_AnnotationTable.txt", "")))
-  GOenrichment(filename = file, FA_filename = fa_filename)
-  GOenrichment(filename = file, FA_filename = fa_filename, upORdown = "down")
-}
-# 
-# for (file in dir()) {
-#   if(startsWith(file, "Gla")) {
-#     fa_filename <- "~/Documents/transcriptome_annotation/GlaBCdTP1_cor2_AnnotationTable.txt"
-#   GOenrichment(filename = file, FA_filename = fa_filename)
-#   GOenrichment(filename = file, FA_filename = fa_filename, upORdown = "down")}
-# }
-
-
-
-setwd("~/Documents/Paper1_stresses/data_tables/eve_deep/")
-fa_filename = "~/Documents/transcriptome_annotation/EveBCdT_AnnotationTable.txt"
-
-for (file in dir()) GOenrichment(filename = file, FA_filename = fa_filename)
-for (file in dir()) GOenrichment(filename = file, FA_filename = fa_filename, upORdown = "down")
-
-
-setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/acetone_phenanthrene/")
-
-for (file in dir()) {
-  if(grepl("csv", file)) {
-    fa_filename <- ifelse(startsWith(file, "Eve"), "~/Documents/transcriptome_annotation/EveBCdTP1_cor_AnnotationTable.txt",
-                          ifelse(startsWith(file, "Ecy"), "~/Documents/transcriptome_annotation/EcyBCdTP1_cor_AnnotationTable.txt",
-                                 ifelse(startsWith(file, "Gla"), "~/Documents/transcriptome_annotation/GlaBCdTP1_cor2_AnnotationTable.txt", "")))
-    GOenrichment(filename = file, FA_filename = fa_filename)
-    GOenrichment(filename = file, FA_filename = fa_filename, upORdown = "down")
-  }
-}
-
-setwd("~/Documents/Paper1_stresses/data_tables/full_assemblies_each_by_own/acetone_phenanthrene/")
-
-for (file in dir()) {
-  if(grepl("csv", file)) {
-    fa_filename <- ifelse(startsWith(file, "Eve"), "~/Documents/transcriptome_annotation/EveBCdTP1_cor_AnnotationTable.txt",
-                          ifelse(startsWith(file, "Ecy"), "~/Documents/transcriptome_annotation/EcyBCdTP1_cor_AnnotationTable.txt",
-                                 ifelse(startsWith(file, "Gla"), "~/Documents/transcriptome_annotation/GlaBCdTP1_cor2_AnnotationTable.txt", "")))
-    GOenrichment(filename = file, FA_filename = fa_filename)
-    GOenrichment(filename = file, FA_filename = fa_filename, upORdown = "down")
-  }
-}
-
-setwd("~/Documents/Paper1_stresses/data_tables/full_assemblies_each_by_own/test_sanity/")
-
-
-####
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
-###########################################
-  #rm(list = ls()) #ok, not now, but it's a good idea anyway
-
-options(stringsAsFactors = F)
-#options(device='x11')
-#grDevices::X11.options(type='cairo')
-options(bitmapType='cairo')
-
-#    scale_color_manual(values=c("#000000", "#E69F00", "#56B4E9", "#009E73",
-#"#F0E442", "#0072B2", "#D55E00", "#CC79A7"))
-#black orange sky_blue green yellow blue vermillion reddish_purple
-
-require(plyr)
-require(reshape2)
-require(ggplot2)
-library(RColorBrewer)
-
+### Visualization (for particular case, but can be adjusted)
+### A small helper function
 process_GO_terms <- function(filename, species, condition, upORdown = "up") {
   if(file.exists(filename)) {
     table <- read.csv(filename)
@@ -213,35 +127,33 @@ process_GO_terms <- function(filename, species, condition, upORdown = "up") {
   return(placeholder)
 }
 
-######
-
-#for now I need this one
+### A function for making GO term plots
 gogo <- function(condition, upORdown = "up", suffix = "annot") {
   species = "Eve" #Eve
   filename <- paste0("Eve", condition, "03", "_", suffix, ".csvGO", upORdown, ".csv")
-    eve3 <- process_GO_terms(filename, species, paste0(condition, "03"), upORdown = upORdown)
+  eve3 <- process_GO_terms(filename, species, paste0(condition, "03"), upORdown = upORdown)
   filename <- paste0("Eve", condition, "24", "_", suffix, ".csvGO", upORdown, ".csv")
-    eve24 <- process_GO_terms(filename, species, paste0(condition, "24"), upORdown = upORdown)
+  eve24 <- process_GO_terms(filename, species, paste0(condition, "24"), upORdown = upORdown)
   species = "Ecy" #Ecy
   filename <- paste0("Ecy", condition, "03", "_", suffix, ".csvGO", upORdown, ".csv")
-    ecy3 <- process_GO_terms(filename, species, paste0(condition, "03"),upORdown = upORdown)
+  ecy3 <- process_GO_terms(filename, species, paste0(condition, "03"),upORdown = upORdown)
   filename <- paste0("./Ecy", condition, "24", "_", suffix, ".csvGO", upORdown, ".csv")
-    ecy24 <- process_GO_terms(filename, species, paste0(condition, "24"), upORdown = upORdown)
+  ecy24 <- process_GO_terms(filename, species, paste0(condition, "24"), upORdown = upORdown)
   species = "Gla" #Gla
   filename <- paste0("./Gla", condition, "03", "_", suffix, ".csvGO", upORdown, ".csv")
-    gla3 <- process_GO_terms(filename, species, paste0(condition, "03"), upORdown = upORdown)
+  gla3 <- process_GO_terms(filename, species, paste0(condition, "03"), upORdown = upORdown)
   filename <- paste0("./Gla", condition, "24", "_", suffix, ".csvGO", upORdown, ".csv")
-    gla24 <- process_GO_terms(filename, species, paste0(condition, "24"), upORdown = upORdown)
+  gla24 <- process_GO_terms(filename, species, paste0(condition, "24"), upORdown = upORdown)
   
   df <- join_all(list(eve3, eve24, ecy3, ecy24, gla3, gla24), by = c("GO.ID", "Term"), type = "full")
-
+  
   
   df <- df[complete.cases(df$Term), ]
   
   df$Term <- ifelse(nchar(df$Term) > 33, 
-                        paste0(substr(df$Term, 1, 20), "...", 
-                               substr(df$Term, nchar(df$Term)-3, nchar(df$Term))),
-                        df$Term)
+                    paste0(substr(df$Term, 1, 30), "...", 
+                           substr(df$Term, nchar(df$Term)-9, nchar(df$Term))),
+                    df$Term)
   
   
   nnas <- apply(df, 1, function(x) sum(is.na(x)))
@@ -276,202 +188,13 @@ gogo <- function(condition, upORdown = "up", suffix = "annot") {
   width <- (max(nchar(df$Term)) + 72) / 13
   height = (length(df$Term) + 5) / 7
   
-  ggsave(paste0("../", condition, "_", upORdown, ".png"), width = width, height = height)
-  ggsave(paste0("../", condition, "_", upORdown, ".svg"), width = width, height = height)
+  ggsave(paste0("./", condition, "_", upORdown, ".png"), width = width, height = height)
+  ggsave(paste0("./", condition, "_", upORdown, ".svg"), width = width, height = height)
   
   print(p)
   return(p)
 }
-
-##manual switch here, which is bad. 
-setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/GO")
-#setwd("~/Documents/Paper1_stresses/data_tables/ecy_reduced/GO")
-upp <- gogo("LT10", "up")
-downp <- gogo("LT10", "down")
-upcd <- gogo("Cd", "up")
-downcd <- gogo("Cd", "down")
-upac <- gogo("PB", "up")
-downac <- gogo("PB", "down")
-upph <- gogo("Ph", "up")
-downph <- gogo("Ph", "down")
-
-
-
-
-setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/acetone_phenanthrene/GO")
-upac <- gogo("PB", "up")
-downac <- gogo("PB", "down")
-upph <- gogo("Ph", "up")
-downph <- gogo("Ph", "down")
-upac <- gogo("PhB", "up")
-downac <- gogo("PhB", "down")
-
-
-
-setwd("~/Documents/Paper1_stresses/data_tables/full_assemblies_each_by_own/GO")
-upp <- gogo("LT10", "up", suffix = "metazoa")
-downp <- gogo("LT10", "down", suffix = "metazoa")
-upcd <- gogo("Cd", "up", suffix = "metazoa")
-downcd <- gogo("Cd", "down", suffix = "metazoa")
-upac <- gogo("PB", "up", suffix = "metazoa")
-downac <- gogo("PB", "down", suffix = "metazoa")
-upph <- gogo("Ph", "up", suffix = "metazoa")
-downph <- gogo("Ph", "down", suffix = "metazoa")
-
-
-setwd("~/Documents/Paper1_stresses/data_tables/full_assemblies_each_by_own/acetone_phenanthrene/GO")
-upac <- gogo("PB", "up", suffix = "metazoa")
-downac <- gogo("PB", "down", suffix = "metazoa")
-upph <- gogo("Ph", "up", suffix = "metazoa")
-downph <- gogo("Ph", "down", suffix = "metazoa")
-upphb <- gogo("PhB", "up", suffix = "metazoa")
-downphb <- gogo("PhB", "down", suffix = "metazoa")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-####What if we take top500 instead of DE (accounting for effect size?)
-
-GOenrichmentTop <- function(filename, sep = ",", upORdown = "up", gocat = "BP",
-                         FA_filename = fa_filename) {
-  #read full data set
-  full_list <- read.csv(filename, sep = sep)
-  ##rename the variable we'll need later for merging
-  names(full_list)[3] <- "Sequence.Name" #2 for Gla, need to generate new ones
-  #names(full_list)[7] <- "Best diamond hit"
-  annotation <- read.delim(FA_filename)
-  #merge tables
-  withAnnotation <- merge(x = annotation, y=full_list[,c(2,3,4,7)], all.x=F, all.y=F , by="Sequence.Name")
-  #get de genes
-  #either upregs
-  if (upORdown == "up") {
-    de <- full_list[full_list$padj < 0.001,]
-    de <- de[order(de$log2FoldChange, decreasing = T)[1:500], ]
-    #get rid of NAs & get names only
-    de <- de[complete.cases(de$padj), "Sequence.Name"] 
-  }
-  #or downregs
-  if (upORdown == "down") {
-    de <- full_list[full_list$log2FoldChange < -3 & full_list$padj < 0.001,]
-    de <- de[order(de$log2FoldChange)[1:500], ]
-    #get rid of NAs & get names only
-    de <- de[complete.cases(de$padj), "Sequence.Name"]
-  }  
-  
-  
-  #get GO terms
-  if (gocat == "BP") BP <- withAnnotation[,c("Sequence.Name", "GO.Biological.Process")]
-  if (gocat == "MF") BP <- withAnnotation[,c("Sequence.Name", "GO.Molecular.Function")]
-  
-  #get only non-empty ones (I just cannot analyze all the rest)
-  if (gocat == "BP") BPGO <- BP[BP$GO.Biological.Process != "-",]
-  if (gocat == "MF")BPGO <- BP[BP$GO.Molecular.Function != "-",]
-  #get all GO terms in machine-readable way (in a list + without names, only numbers)
-  
-  if (gocat == "BP") GOs <- strsplit(BPGO$GO.Biological.Process, split = "| ", fixed = T)
-  if (gocat == "MF") GOs <- strsplit(BPGO$GO.Molecular.Function, split = "| ", fixed = T)
-  names(GOs) <- BPGO$Sequence.Name
-  
-  GOsTop <- lapply(X = GOs, function(x) gsub(" .*", "", x)) #remove human-readable name
-  #get DE genes for the object
-  DElist <- factor(as.integer(names(GOsTop) %in% de))
-  
-  #exit the function if the DE list is empty
-  if (length(levels(DElist)) <= 1) return("No DE genes to look at")
-  
-  
-  names(DElist) <- names(GOsTop)
-  #construct a GOdat object (topGO package)
-  GOdata <- new("topGOdata", ontology = gocat, allGenes = DElist, annot = annFUN.gene2GO, gene2GO = GOsTop)
-  f <- runTest(GOdata, algorithm = "elim", statistic = "fisher") 
-  #from the manual: We like to interpret the p-values returned by these methods as corrected or not affected by multiple testing.    
-  signif_at_0.001 <- sum(f@score < 0.001)
-  allRes <- GenTable(object = GOdata, f, topNodes = signif_at_0.001, numChar = 100)        
-  write.csv(allRes, paste0("GOtop500/", filename, "GO", upORdown, ".csv"))
-  return(allRes)
-}
-
-
-setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/")
-
-for (file in dir()) {
-  if(grepl("csv", file)) {
-    fa_filename <- ifelse(startsWith(file, "Eve"), "~/Documents/transcriptome_annotation/EveBCdTP1_cor_AnnotationTable.txt",
-                          ifelse(startsWith(file, "Ecy"), "~/Documents/transcriptome_annotation/EcyBCdTP1_cor_AnnotationTable.txt",
-                                 ifelse(startsWith(file, "Gla"), "~/Documents/transcriptome_annotation/GlaBCdTP1_cor2_AnnotationTable.txt", "")))
-    GOenrichmentTop(filename = file, FA_filename = fa_filename)
-    GOenrichmentTop(filename = file, FA_filename = fa_filename, upORdown = "down")
-  }
-
-}
-
-
-##manual switch here, which is bad. 
-setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/GO")
-#setwd("~/Documents/Paper1_stresses/data_tables/ecy_reduced/GO")
-upp <- gogo("LT10", "up")
-downp <- gogo("LT10", "down")
-upcd <- gogo("Cd", "up")
-downcd <- gogo("Cd", "down")
-upac <- gogo("PB", "up")
-downac <- gogo("PB", "down")
-upph <- gogo("Ph", "up")
-downph <- gogo("Ph", "down")
-upph <- gogo("PhB", "up")
-downph <- gogo("PhB", "down")
-
-setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/GO")
-#setwd("~/Documents/Paper1_stresses/data_tables/ecy_reduced/GO")
-upp <- gogo("LT10", "up")
-downp <- gogo("LT10", "down")
-upcd <- gogo("Cd", "up")
-downcd <- gogo("Cd", "down")
-upac <- gogo("PB", "up")
-downac <- gogo("PB", "down")
-upph <- gogo("Ph", "up")
-downph <- gogo("Ph", "down")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+### The same but now for time series
 gogots <- function(upORdown = "up", species) {
   
   filename <- paste0("./", species, "T12", "_annot.csvGO", upORdown, ".csv")
@@ -524,8 +247,70 @@ gogots <- function(upORdown = "up", species) {
   return(p)
 }
 
-setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/GO")
+### Main part
 
+
+##### 
+### GO term processing
+### This is our main set
+setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/")
+### Change here for another directory
+#setwd("~/Documents/Paper1_stresses/data_tables/")
+#setwd("~/Documents/Paper1_stresses/data_tables/full_assemblies_each_by_own/")
+
+for (file in dir()) {
+  if(grepl("csv", file)) {
+    # ## Biological process, logFC cutoff of 3
+    #  GOenrichment(filename = file, writeGenes = T)
+    #  GOenrichment(filename = file, upORdown = "down", writeGenes = T)
+    # # ## Molecular function, logFC cutoff of 3
+    #  GOenrichment(filename = file, gocat = "MF", writeGenes = T)
+    #  GOenrichment(filename = file, upORdown = "down", gocat = "MF", writeGenes = T)
+    # ## Biological process, logFC 1
+      GOenrichment(filename = file, gocat = "BP", logFCthreshold = 1, writeGenes = T)
+      GOenrichment(filename = file, upORdown = "down", logFCthreshold = 1, writeGenes = T)
+    # ## Molecular function, logFC 1
+     GOenrichment(filename = file, gocat = "MF", logFCthreshold = 1, writeGenes = T)
+     GOenrichment(filename = file, upORdown = "down", gocat = "MF", logFCthreshold = 1, writeGenes = T)
+    ## Cellular component (just in case)
+    GOenrichment(filename = file, gocat = "CC", logFCthreshold = 1, writeGenes = T)
+    GOenrichment(filename = file, gocat = "CC", upORdown = "down", logFCthreshold = 1, writeGenes = T)
+      }}
+
+
+#####
+##Let's now draw some illustrations##########
+## manual switch here, which is bad. But easy and convenient
+## Choose directory
+# setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/GO_FC1_padj_0.001_MF/")
+# setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/GO_FC1_padj_0.001_CC/")
+setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/GO_FC3_padj_0.001_BP/")
+
+  upp <- gogo("LT10", "up")
+  downp <- gogo("LT10", "down")
+  upcd <- gogo("Cd", "up")
+  downcd <- gogo("Cd", "down")
+  upac <- gogo("PB", "up")
+  downac <- gogo("PB", "down")
+  upph <- gogo("Ph", "up")
+  downph <- gogo("Ph", "down")
+  upacph <- gogo("PhB", "up")
+  downacph <- gogo("PhB", "down")
+
+### For full assemblies we need a switch, as the files are named differently
+setwd("~/Documents/Paper1_stresses/data_tables/full_assemblies_each_by_own/GO1BP/")
+
+ upp <- gogo("LT10", "up", suffix = "metazoa")
+ downp <- gogo("LT10", "down", suffix = "metazoa")
+ upcd <- gogo("Cd", "up", suffix = "metazoa")
+ downcd <- gogo("Cd", "down", suffix = "metazoa")
+ upac <- gogo("PB", "up", suffix = "metazoa")
+ downac <- gogo("PB", "down", suffix = "metazoa")
+ upph <- gogo("Ph", "up", suffix = "metazoa")
+ downph <- gogo("Ph", "down", suffix = "metazoa")
+
+###And time series (just to have the figures ready)
+setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/GO_FC1_padj_0.001_BP/")
 
 gogots(species = "Eve")
 gogots(species = "Ecy")
