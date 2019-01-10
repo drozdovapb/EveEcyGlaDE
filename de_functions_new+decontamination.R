@@ -255,3 +255,64 @@ filterTaxon <- function(thispecies, theseconditions) {
          p3, device = "png", width = 3, height = 3)
   
 }
+
+
+##Another function for filterTaxon
+filterTaxonReduced <- function(thispecies, theseconditions, logFCthreshold = 3) {
+  
+  #now, get colors right
+  palette <- c("Blues", "Greens", "Oranges")
+  colors <- c("#4087AF", "#007656", "#D55E00") #I see it. Coblis does as well. Blue, green, orange
+  species <- c("Ecy", "Eve", "Gla")
+  
+  thispalette <- palette[which(species ==  thispecies)]
+  thiscolor <- colors[which(species == thispecies)]
+  #and get alpha
+  thisalpha <- ifelse(thispecies == "Ecy", 0.5, 0.3)
+  
+  resOrdered <- read.csv(paste0(thispecies,theseconditions[2],"_ordered.csv"), stringsAsFactors = F)
+  
+  ##Merge with 'annotation'
+  
+  #Annotation (best blast hit + also taxonomical information)
+  diamond <- read.delim(
+    #        paste0("/media/main/sandbox/drozdovapb/DE/annotation/", thisassembly, ".diamond.tsv"), 
+    paste0("/run/media/polina/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"),
+    #    paste0("/media/drozdovapb/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"), 
+    head=F, stringsAsFactors = F)
+  names(diamond)[1] <- "gene"
+  diamond$V13 <- sapply(strsplit(diamond$V13, split=";"), '[', 1)
+  #names(res)[1] <- "gene"
+  #resOrdered$gene <- row.names(resOrdered)
+  #now as I've read those, it should be different
+  resOrdered$gene <- resOrdered$X
+  
+  premerged <- merge(y = diamond[,c(1,13,14)], x=as.data.frame(resOrdered), all.x=T, all.y=F , by="gene")
+  
+  #Annotation made by FunctionAnnotator  
+  fa <- read.delim(
+    #        paste0("/media/main/sandbox/drozdovapb/DE/annotation/", thisassembly, ".diamond.tsv"), 
+    paste0("/run/media/polina/Elements/transcriptome/DE/3-annotation/", thisassembly, "_AnnotationTable.txt"),
+    #    paste0("/media/drozdovapb/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"), 
+    head=T, stringsAsFactors = F)
+  names(fa)[1] <- "gene"
+  
+  merged <- merge(y = fa[,c(1:3,7:9,22)], x=premerged, all.x=T, all.y=F , by="gene")
+  
+  #rename
+  names(merged)[which(names(merged) == "V13")] <- "taxon"
+  names(merged)[which(names(merged) == "V14")] <- "best.nr.hit.diamond"
+  
+  mergedOrdered <- merged[order(merged$log2FoldChange),]
+  #remove the genes with unidentifiable padj, or they will colonize the downstream things
+  mergedOrdered <- mergedOrdered[complete.cases(mergedOrdered$padj),]
+  write.csv(mergedOrdered, paste0(thispecies,theseconditions[2],"_annot.csv"))
+  
+  de <- mergedOrdered[abs(mergedOrdered$log2FoldChange) > logFCthreshold & mergedOrdered$padj < 0.001,]
+  write.csv(de, paste0(thispecies,theseconditions[2],"_annot_de.csv"))
+  
+  p1 <- volcanoplot(merged, thiscolor)
+  ggsave(paste0(thispecies,theseconditions[2],".png"), 
+         p1, width = 3, device="png", height = 3)
+  
+}
