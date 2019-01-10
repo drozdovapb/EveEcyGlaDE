@@ -1,4 +1,4 @@
-####This script is for GO terms
+####This script serves to get overrepresented GO terms from DE (DESeq2) results
 
 ###reading options
 options(stringsAsFactors = F)
@@ -14,11 +14,14 @@ require(ggplot2)
 library(RColorBrewer)
 library(topGO)
 
+###just in case: color palette
 #scale_color_manual(values=c("#000000", "#E69F00", "#56B4E9", "#009E73",
 #"#F0E442", "#0072B2", "#D55E00", "#CC79A7"))
 #black orange sky_blue green yellow blue vermillion reddish_purple
 
 
+###############################################################################
+###Functions
 ###This function is for list of genes => enriched GO terms. Supports custom FC cutoff.
 ##testing set
 #filename = "EcyT12_annot.csv"; sep = ","; upORdown = "up"; gocat = "BP"
@@ -247,10 +250,9 @@ gogots <- function(upORdown = "up", species) {
   return(p)
 }
 
-### Main part
 
-
-##### 
+###############################################################################
+### Main part (example usage)
 ### GO term processing
 ### This is our main set
 setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/")
@@ -277,8 +279,7 @@ for (file in dir()) {
     GOenrichment(filename = file, gocat = "CC", upORdown = "down", logFCthreshold = 1, writeGenes = T)
       }}
 
-
-#####
+###############################################################################
 ##Let's now draw some illustrations##########
 ## manual switch here, which is bad. But easy and convenient
 ## Choose directory
