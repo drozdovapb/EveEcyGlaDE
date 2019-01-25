@@ -55,12 +55,8 @@ select.everything <- function(thisassembly) {
   ## Here we use another logic (all remaining), or otherwise we get weird results
   evem_other <- setdiff(evem$V1, evem[evem$kingdom==5878 | evem$kingdom==33208, "V1",])
   writeLines(evem_other, paste0("../names/", thisassembly, "_Other.names.txt"))
-}
-
-
-write.names <- function(assembly) {
-  ##read diamond file
-  tbl <- read.delim(paste0(wdir, thisassembly, ".diamond.tsv"), head=F, stringsAsFactors = F)
+  ## And finally, it would also be useful to have the list of non-annotated genes
+  ## todo think about writing it as well
 }
 
 ####################INSTRUCTIONS FOR THE MAIN PART#################################################

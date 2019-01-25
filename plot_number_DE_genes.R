@@ -56,7 +56,7 @@ getnumberDE <- function(conditions) { #conditions is a vector of length 2, e.g. 
     ylab("number of DE genes, two-fold change") + 
     geom_hline(yintercept = 0, col = "white") #+ #ylim(-100, 100) +
   
-  pa
+  print(pa)
   
   ggsave(paste0("~/Documents/Paper1_stresses/multipanel_figures/", conditions[1], conditions[2], "_nDE.svg"), 
          pa, width = 150, units = "mm")
@@ -66,3 +66,4 @@ getnumberDE <- function(conditions) { #conditions is a vector of length 2, e.g. 
 ###############################################################################
 ###Main part
 ###Example usage
+getnumberDE(c("LT1003", "LT1024"))

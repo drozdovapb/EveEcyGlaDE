@@ -147,6 +147,12 @@ perform.de <- function(dir, thispecies, theseconditions) {
     
     write.csv(resOrdered, paste0(thispecies,theseconditions[2],"_ordered.csv"))
     
+    ##and some info for me
+    message("number of DE genes for absolute log FC threshold = 1")
+    temp <- resOrdered[complete.cases(resOrdered$padj), ]
+    print(nrow(temp[abs(temp$log2FoldChange) > 1 & temp$padj < 0.001,]))
+    message("number of DE genes for absolute log FC threshold = 3")
+    print(nrow(temp[abs(temp$log2FoldChange) > 3 & temp$padj < 0.001,]))
     
     return(resOrdered)
     
