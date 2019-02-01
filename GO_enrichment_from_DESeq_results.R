@@ -269,15 +269,40 @@ for (file in dir()) {
     #  GOenrichment(filename = file, gocat = "MF", writeGenes = T)
     #  GOenrichment(filename = file, upORdown = "down", gocat = "MF", writeGenes = T)
     # ## Biological process, logFC 1
-      GOenrichment(filename = file, gocat = "BP", logFCthreshold = 1, writeGenes = T)
-      GOenrichment(filename = file, upORdown = "down", logFCthreshold = 1, writeGenes = T)
+      #GOenrichment(filename = file, gocat = "BP", logFCthreshold = 3, writeGenes = T)
+      #GOenrichment(filename = file, upORdown = "down", logFCthreshold = 3, writeGenes = T)
     # ## Molecular function, logFC 1
-     GOenrichment(filename = file, gocat = "MF", logFCthreshold = 1, writeGenes = T)
-     GOenrichment(filename = file, upORdown = "down", gocat = "MF", logFCthreshold = 1, writeGenes = T)
+     #GOenrichment(filename = file, gocat = "MF", logFCthreshold = 3, writeGenes = T)
+     #GOenrichment(filename = file, upORdown = "down", gocat = "MF", logFCthreshold = 3, writeGenes = T)
     ## Cellular component (just in case)
-    GOenrichment(filename = file, gocat = "CC", logFCthreshold = 1, writeGenes = T)
-    GOenrichment(filename = file, gocat = "CC", upORdown = "down", logFCthreshold = 1, writeGenes = T)
+    #GOenrichment(filename = file, gocat = "CC", logFCthreshold = 3, writeGenes = T)
+    #GOenrichment(filename = file, gocat = "CC", upORdown = "down", logFCthreshold = 3, writeGenes = T)
+    
+    
+    GOenrichment(filename = file, gocat = "BP", logFCthreshold = 1, writeGenes = T, padj.threshold = 0.05)
+    GOenrichment(filename = file, upORdown = "down", logFCthreshold = 1, writeGenes = T, padj.threshold = 0.05)
+    # ## Molecular function, logFC 1
+    #GOenrichment(filename = file, gocat = "MF", logFCthreshold = 3, writeGenes = T)
+    #GOenrichment(filename = file, upORdown = "down", gocat = "MF", logFCthreshold = 3, writeGenes = T)
+    ## Cellular component (just in case)
+    #GOenrichment(filename = file, gocat = "CC", logFCthreshold = 3, writeGenes = T)
+    #GOenrichment(filename = file, gocat = "CC", upORdown = "down", logFCthreshold = 3, writeGenes = T)
+    
       }}
+
+
+
+
+setwd("~/Documents/Paper2_time_series/compare_controls/data_tables/")
+### Change here for another directory
+
+for (file in dir()) {
+  if(grepl("csv", file)) {
+    GOenrichment(filename = file, gocat = "BP", logFCthreshold = 1, writeGenes = T)
+    GOenrichment(filename = file, upORdown = "down", logFCthreshold = 1, writeGenes = T)
+
+  }}
+
 
 ###############################################################################
 ##Let's now draw some illustrations##########
@@ -286,6 +311,8 @@ for (file in dir()) {
 # setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/GO_FC1_padj_0.001_MF/")
 # setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/GO_FC1_padj_0.001_CC/")
 setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/GO_FC3_padj_0.001_BP/")
+setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/GO_FC3_padj_0.001_MF/")
+setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/GO_FC3_padj_0.001_CC/")
 
   upp <- gogo("LT10", "up")
   downp <- gogo("LT10", "down")

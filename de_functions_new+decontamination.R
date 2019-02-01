@@ -34,12 +34,12 @@ matchTaxonomy <- function(tax_report, thisassembly) {
     return(qq)}
 
 
-volcanoplot <- function(merged, thiscolor, thisalpha = 0.3) {
+volcanoplot <- function(merged, thiscolor, thisalpha = 0.3, thesecondi) {
     sig <- ifelse(abs(merged$log2FoldChange) > 3 & merged$padj < 0.001, thiscolor, "black")
     p <- ggplot(merged, aes(log2FoldChange, -log10(padj))) +
         geom_point(col=sig, alpha=thisalpha) + ylim(0, 50) + xlim(-15, 15) +
       #geom_point(col=sig) + ylim(0, 50) + xlim(-15, 15) +
-        ggtitle(paste0(thispecies, theseconditions[2], "_vs_", theseconditions[1]))
+        ggtitle(paste0(thispecies, thesecondi[2], "_vs_", thesecondi[1]))
     return(p)
 }
 
@@ -145,7 +145,7 @@ perform.de <- function(dir, thispecies, theseconditions) {
     
     resOrdered <- res[order(res$log2FoldChange),]
     
-    write.csv(resOrdered, paste0(thispecies,theseconditions[2],"_ordered.csv"))
+    write.csv(resOrdered, paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1],"_ordered.csv"))
     
     ##and some info for me
     message("number of DE genes for absolute log FC threshold = 1")
@@ -154,7 +154,7 @@ perform.de <- function(dir, thispecies, theseconditions) {
     message("number of DE genes for absolute log FC threshold = 3")
     print(nrow(temp[abs(temp$log2FoldChange) > 3 & temp$padj < 0.001,]))
     
-    return(resOrdered)
+    #return(resOrdered)
     
 }
 
@@ -210,12 +210,12 @@ filterTaxon <- function(thispecies, theseconditions) {
   mergedOrdered <- merged[order(merged$log2FoldChange),]
   #remove the genes with unidentifiable padj, or they will colonize the downstream things
   mergedOrdered <- mergedOrdered[complete.cases(mergedOrdered$padj),]
-  write.csv(mergedOrdered, paste0(thispecies,theseconditions[2],"_annot.csv"))
+  write.csv(mergedOrdered, paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1],"_annot.csv"))
   
   de <- mergedOrdered[abs(mergedOrdered$log2FoldChange) > 3 & mergedOrdered$padj < 0.001,]
-  write.csv(de, paste0(thispecies,theseconditions[2],"_annot_de.csv"))
+  write.csv(de, paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1],"_annot_de.csv"))
   
-  p1 <- volcanoplot(merged, thiscolor)
+  p1 <- volcanoplot(merged, thiscolor, thesecondi = theseconditions)
    ggsave(paste0(thispecies,theseconditions[2],".png"), 
             p1, width = 3, device="png", height = 3)
   
@@ -231,14 +231,14 @@ filterTaxon <- function(thispecies, theseconditions) {
   merged.metazoa <- select.metazoa(mergedOrdered, qq)
   merged.metazoa <- merged.metazoa[order(merged.metazoa$log2FoldChange),]
   #merged.metazoa <- merged.metazoa[complete.cases(merged.metazoa$padj),] #shouldn't be important now
-  write.csv(merged.metazoa, paste0(thispecies,theseconditions[2],"_metazoa.csv"))
+  write.csv(merged.metazoa, paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1],"_metazoa.csv"))
   
   merged.metazoa.de <- merged.metazoa[abs(merged.metazoa$log2FoldChange) > 3 & merged.metazoa$padj < 0.001,]    
   #merged.metazoa.de <- merged.metazoa.de[complete.cases(merged.metazoa.de),] #again, sholdn't make any diff now
   write.csv(merged.metazoa.de,
-            paste0(thispecies,theseconditions[2],"_metazoa_de.csv"))
+            paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1],"_metazoa_de.csv"))
   
-  p2 <- volcanoplot(merged.metazoa, thiscolor) + 
+  p2 <- volcanoplot(merged.metazoa, thiscolor, thesecondi = theseconditions) + 
     ggtitle(paste0(thispecies, theseconditions[2], "_vs_", theseconditions[1], "_Metazoa"))
   #p
   ggsave(paste0(thispecies,theseconditions[2],"_metazoa.png"), 
@@ -247,14 +247,14 @@ filterTaxon <- function(thispecies, theseconditions) {
   
   merged.decont <- deselect.contaminants(merged, qq)
   merged.decont <- merged.decont[order(merged.decont$log2FoldChange),]
-  write.csv(merged.decont, paste0(thispecies,theseconditions[2],"_decont.csv"))
+  write.csv(merged.decont, paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1],"_decont.csv"))
   
   merged.decont.de <- merged.decont[abs(merged.decont$log2FoldChange) > 3 & merged.decont$padj < 0.001,]    
   merged.decont.de <- merged.decont.de[complete.cases(merged.decont.de$gene),] #but this is important!
   write.csv(merged.decont.de,
             paste0(thispecies,theseconditions[2],"_decont_de.csv"))
   
-  p3 <- volcanoplot(merged.decont, thiscolor) + 
+  p3 <- volcanoplot(merged.decont, thiscolor, thesecondi = theseconditions) + 
     ggtitle(paste0(thispecies, theseconditions[2], "_vs_", theseconditions[1], "-contam-n"))
   #p
   ggsave(paste0(thispecies,theseconditions[2],"_decont.png"), 
@@ -276,7 +276,7 @@ filterTaxonReduced <- function(thispecies, theseconditions, logFCthreshold = 3) 
   #and get alpha
   thisalpha <- ifelse(thispecies == "Ecy", 0.5, 0.3)
   
-  resOrdered <- read.csv(paste0(thispecies,theseconditions[2],"_ordered.csv"), stringsAsFactors = F)
+  resOrdered <- read.csv(paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1],"_ordered.csv"), stringsAsFactors = F)
   
   ##Merge with 'annotation'
   
@@ -312,12 +312,12 @@ filterTaxonReduced <- function(thispecies, theseconditions, logFCthreshold = 3) 
   mergedOrdered <- merged[order(merged$log2FoldChange),]
   #remove the genes with unidentifiable padj, or they will colonize the downstream things
   mergedOrdered <- mergedOrdered[complete.cases(mergedOrdered$padj),]
-  write.csv(mergedOrdered, paste0(thispecies,theseconditions[2],"_annot.csv"))
+  write.csv(mergedOrdered, paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1],"_annot.csv"))
   
   de <- mergedOrdered[abs(mergedOrdered$log2FoldChange) > logFCthreshold & mergedOrdered$padj < 0.001,]
-  write.csv(de, paste0(thispecies,theseconditions[2],"_annot_de.csv"))
+  write.csv(de, paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1],"_annot_de.csv"))
   
-  p1 <- volcanoplot(merged, thiscolor)
+  p1 <- volcanoplot(merged, thiscolor, thesecondi = theseconditions)
   ggsave(paste0(thispecies,theseconditions[2],".png"), 
          p1, width = 3, device="png", height = 3)
   
