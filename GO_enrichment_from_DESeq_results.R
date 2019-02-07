@@ -295,13 +295,16 @@ for (file in dir()) {
 
 setwd("~/Documents/Paper2_time_series/compare_controls/data_tables/")
 ### Change here for another directory
+setwd("~/Documents/Paper1_stresses/data_tables/interspecies/new")
 
 for (file in dir()) {
   if(grepl("csv", file)) {
-    GOenrichment(filename = file, gocat = "BP", logFCthreshold = 1, writeGenes = T)
-    GOenrichment(filename = file, upORdown = "down", logFCthreshold = 1, writeGenes = T)
+    GOenrichment(filename = file, gocat = "BP", logFCthreshold = 3, writeGenes = T)
+    GOenrichment(filename = file, upORdown = "down", logFCthreshold = 3, writeGenes = T)
 
   }}
+
+
 
 
 ###############################################################################
@@ -347,3 +350,63 @@ gogots(species = "Gla")
 gogots(species = "Eve", upORdown = "down")
 gogots(species = "Ecy", upORdown = "down")
 gogots(species = "Gla", upORdown = "down")
+
+setwd("/homes/brauerei/polina/Documents/Paper1_stresses/data_tables/interspecies")
+GOenrichment("./EcyGlaB03_vs_B03_annot.csv", writeGenes = T)
+GOenrichment("./EcyGlaB03_vs_B03_annot.csv", upORdown = "down", writeGenes = T)
+GOenrichment("./GlaEcyB03_vs_B03_annot.csv", writeGenes = T)
+GOenrichment("./GlaEcyB03_vs_B03_annot.csv", writeGenes = T, upORdown = "down")
+
+
+
+
+
+################3
+filename <- paste0("./", species, "T12", "_annot.csvGO", upORdown, ".csv")
+T12 <- process_GO_terms(filename, species, "T12", upORdown = upORdown)
+filename <- paste0("./", species, "T18", "_annot.csvGO", upORdown, ".csv")
+T18 <- process_GO_terms(filename, species, "T18", upORdown = upORdown)
+filename <- paste0("./", species, "T24", "_annot.csvGO", upORdown, ".csv")
+T24 <- process_GO_terms(filename, species, "T24", upORdown = upORdown)
+
+filename <- paste0("./", species, "LT1003", "_annot.csvGO", upORdown, ".csv")
+LT1003 <- process_GO_terms(filename, species, "LT1003", upORdown = upORdown)
+filename <- paste0("./", species, "LT1024", "_annot.csvGO", upORdown, ".csv")
+LT1024 <- process_GO_terms(filename, species, "LT1024", upORdown = upORdown)
+
+df <- join_all(list(T12, T18, T24, LT1003, LT1024), by = c("GO.ID", "Term"), type = "full") 
+df <- df[complete.cases(df$Term), ]
+
+nnas <- apply(df, 1, function(x) sum(is.na(x)))
+names(nnas) <- 1:nrow(df)
+sortorder <- as.numeric(names(sort(nnas)))
+df <- df[sortorder, ]
+
+melted <- melt(df, id.vars = c("GO.ID", "Term"))
+names(melted) <- c("GO.ID", "Term", "Sample", "p.value")
+
+melted$Term <- factor(melted$Term, levels = rev(df$Term))
+
+p <- melted$p.value
+p_value <- ifelse(p < 0.000001, "p < 10e-6", ifelse (p < 0.00001, "p < 10e-5", ifelse(p < 0.0001, "p < 10e-4", "p < 10e-3")))
+
+if (upORdown == "up") palette <- rev(brewer.pal(11, "PiYG")[1:4])
+if (upORdown == "down") palette <- brewer.pal(11, "PiYG")[8:11]
+
+p <- ggplot(melted, aes(x = Sample, y = Term, fill = p_value)) +
+  geom_tile(aes(width=0.9, height=0.7), size=2) +
+  scale_color_manual("black") +
+  theme_classic() + 
+  scale_fill_manual(values = palette) + 
+  xlab("Species / treatment") + 
+  scale_x_discrete(position = "top") + 
+  geom_hline(yintercept = sum(nnas == 4) + 0.5, linetype = "dotted") +
+  geom_vline(xintercept = 3.5, col = "grey")
+
+width <- (max(nchar(df$Term)) + 60) / 13
+height = (length(df$Term) + 5) / 7
+
+ggsave(paste0(species, "temp_gradual", "_", upORdown, ".png"), width = width, height = height)
+
+print(p)
+return(p)

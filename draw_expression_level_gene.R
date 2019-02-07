@@ -23,6 +23,26 @@ gla_ts_sp <- samples[samples$species == "Gla" & samples$condition %in% ts_sample
 glats <- gla[, c(1, which(names(gla) %in% gla_ts_sp))]
 write.csv(glats, "gla_T.cnt.csv", row.names = F)
 
+
+## the same about this part, for acute stressors
+setwd("/homes/brauerei/polina/Documents/Paper1_stresses/")
+paper1_samples <- c("B03", "B24h", "LT1003", "LT1024", "Cd03", "Cd24")
+samples <- read.csv("samples.csv")
+#Eve
+eve <- read.delim("../Paper2_time_series/eve_all.cnt", sep = " ")
+eve_ac_sp <- samples[samples$species == "Eve" & samples$condition %in% paper1_samples, "sample"]
+evea <- eve[, c(1, which(names(eve) %in% eve_ac_sp))]
+write.csv(evea, "eve_paper1.cnt.csv", row.names = F)
+#Ecy
+ecy <- read.delim("../Paper2_time_series/ecy_all.cnt", sep = " ")
+ecy_ac_sp <- samples[samples$species == "Ecy" & samples$condition %in% paper1_samples, "sample"]
+ecya <- ecy[, c(1, which(names(ecy) %in% ecy_ac_sp))]
+write.csv(ecya, "ecy_paper1.cnt.csv", row.names = F)
+#Gla
+gla <- read.delim("../Paper2_time_series/gla_all.cnt", sep = " ")
+gla_ac_sp <- samples[samples$species == "Gla" & samples$condition %in% paper1_samples, "sample"]
+glaa <- gla[, c(1, which(names(gla) %in% gla_ac_sp))]
+write.csv(glaa, "gla_paper1.cnt.csv", row.names = F)
 #####
 
 #read data.
@@ -118,6 +138,16 @@ evedat <- read.csv("./eve_T.cnt.csv")
 ecydat <- read.csv("./ecy_T.cnt.csv")
 gladat <- read.csv("./gla_T.cnt.csv")
 
+
+eveALLdat <- read.csv("./eve_all.cnt", sep = " ")
+ecyALLdat <- read.csv("./ecy_all.cnt", sep = " ")
+glaALLdat <- read.csv("./gla_all.cnt", sep = " ")
+
+#paper 1 data
+
+eveTCdat <- read.csv("./eve_paper1.cnt.csv)
+
+
 diamondv <- read.delim("~/Documents/transcriptome_annotation/EveBCdTP1_ani.diamond.tsv", head = F,
                        stringsAsFactors = F)
 diamondc <- read.delim("~/Documents/transcriptome_annotation/EcyBCdTP1_ani.diamond.tsv", head = F,
@@ -150,3 +180,7 @@ draw_by_term("pyruvate kinase", dat = evedat, annotation=diamondv, species = "Ev
 draw_by_term("vitellogenin", dat = evedat, annotation=diamondv, species = "Eve")
 draw_by_term("vitellogenin", dat = ecydat, annotation=diamondc, species = "Ecy")
 draw_by_term("vitellogenin", dat = gladat, annotation=diamondl, species = "Gla")
+
+
+#COX3 in Eve
+draw_by_id("TRINITY_DN280825_c0_g1_i1", dat = eveALLdat, annotation = diamondv, species = "Eve")

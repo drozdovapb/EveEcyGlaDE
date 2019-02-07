@@ -312,13 +312,237 @@ filterTaxonReduced <- function(thispecies, theseconditions, logFCthreshold = 3) 
   mergedOrdered <- merged[order(merged$log2FoldChange),]
   #remove the genes with unidentifiable padj, or they will colonize the downstream things
   mergedOrdered <- mergedOrdered[complete.cases(mergedOrdered$padj),]
-  write.csv(mergedOrdered, paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1],"_annot.csv"))
+  write.csv(mergedOrdered, paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1], "_annot.csv"))
   
   de <- mergedOrdered[abs(mergedOrdered$log2FoldChange) > logFCthreshold & mergedOrdered$padj < 0.001,]
-  write.csv(de, paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1],"_annot_de.csv"))
+  write.csv(de, paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1], logFCthreshold, "_annot_de.csv"))
   
   p1 <- volcanoplot(merged, thiscolor, thesecondi = theseconditions)
-  ggsave(paste0(thispecies,theseconditions[2],".png"), 
+  ggsave(paste0(thispecies,theseconditions[2], theseconditions[1], logFCthreshold,".png"), 
+         p1, width = 3, device="png", height = 3)
+  
+}
+
+
+
+##Another function for filterTaxon
+filterTaxonReduced <- function(thispecies, theseconditions, logFCthreshold = 3) {
+  
+  #now, get colors right
+  palette <- c("Blues", "Greens", "Oranges")
+  colors <- c("#4087AF", "#007656", "#D55E00") #I see it. Coblis does as well. Blue, green, orange
+  species <- c("Ecy", "Eve", "Gla")
+  
+  thispalette <- palette[which(species ==  thispecies)]
+  thiscolor <- colors[which(species == thispecies)]
+  #and get alpha
+  thisalpha <- ifelse(thispecies == "Ecy", 0.5, 0.3)
+  
+  resOrdered <- read.csv(paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1],"_ordered.csv"), stringsAsFactors = F)
+  
+  ##Merge with 'annotation'
+  
+  #Annotation (best blast hit + also taxonomical information)
+  diamond <- read.delim(
+    #        paste0("/media/main/sandbox/drozdovapb/DE/annotation/", thisassembly, ".diamond.tsv"), 
+    paste0("/run/media/polina/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"),
+    #    paste0("/media/drozdovapb/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"), 
+    head=F, stringsAsFactors = F)
+  names(diamond)[1] <- "gene"
+  diamond$V13 <- sapply(strsplit(diamond$V13, split=";"), '[', 1)
+  #names(res)[1] <- "gene"
+  #resOrdered$gene <- row.names(resOrdered)
+  #now as I've read those, it should be different
+  resOrdered$gene <- resOrdered$X
+  
+  premerged <- merge(y = diamond[,c(1,13,14)], x=as.data.frame(resOrdered), all.x=T, all.y=F , by="gene")
+  
+  #Annotation made by FunctionAnnotator  
+  fa <- read.delim(
+    #        paste0("/media/main/sandbox/drozdovapb/DE/annotation/", thisassembly, ".diamond.tsv"), 
+    paste0("/run/media/polina/Elements/transcriptome/DE/3-annotation/", thisassembly, "_AnnotationTable.txt"),
+    #    paste0("/media/drozdovapb/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"), 
+    head=T, stringsAsFactors = F)
+  names(fa)[1] <- "gene"
+  
+  merged <- merge(y = fa[,c(1:3,7:9,22)], x=premerged, all.x=T, all.y=F , by="gene")
+  
+  #rename
+  names(merged)[which(names(merged) == "V13")] <- "taxon"
+  names(merged)[which(names(merged) == "V14")] <- "best.nr.hit.diamond"
+  
+  mergedOrdered <- merged[order(merged$log2FoldChange),]
+  #remove the genes with unidentifiable padj, or they will colonize the downstream things
+  mergedOrdered <- mergedOrdered[complete.cases(mergedOrdered$padj),]
+  write.csv(mergedOrdered, paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1], "_annot.csv"))
+  
+  de <- mergedOrdered[abs(mergedOrdered$log2FoldChange) > logFCthreshold & mergedOrdered$padj < 0.001,]
+  write.csv(de, paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1], logFCthreshold, "_annot_de.csv"))
+  
+  p1 <- volcanoplot(merged, thiscolor, thesecondi = theseconditions)
+  ggsave(paste0(thispecies,theseconditions[2], theseconditions[1], logFCthreshold,".png"), 
+         p1, width = 3, device="png", height = 3)
+  
+}
+
+
+##interspecific
+perform.de.inter <- function(dir, thispecies, theseconditions) {
+  #Setup
+  setwd(dir)
+  #read samples table
+  samples <- read.csv("./samples.csv")
+  #create a vector of paths to files
+  files <- file.path(dir, "gc", samples$salmon.folder, "quant.sf")
+  names(files) <- paste0("sample", 1:6)
+  #check whether everything is fine and all the files exist
+  all(file.exists(files))
+  
+  
+  #now, get colors right
+  #palette <- c("Blues", "Greens", "Oranges")
+  ##colors <- c("blue4", "green4", "orange4")
+  ##colors <- c("#0072B2", "#009E73", "#D55E00") #should be the color blind friendly panel but....
+  colors <- c("#56B4E9", "#007656", "#D55E00") #I see it. Coblis also does. blue green orange.
+  species <- c("Ecy", "Eve", "Gla")
+  
+  #thispalette <- palette[which(species ==  thispecies)]
+  #thiscolor <- colors[which(species == thispecies)]
+  thiscolor <- "#FF0000"
+  
+  ###Transcripts need to be associated with gene IDs for gene-level summarization.
+  ###should I be fine with transcript-level summarization?
+  
+  #txi <- tximport(files, type = "salmon", txOut=TRUE)
+  #it would never work at my laptop
+  
+  tocompare <- which(samples$species %in% thispecies & samples$condition %in% theseconditions)
+  txi <- tximport(files[tocompare], type = "salmon", txOut=TRUE)
+  #should be read in several minutes...
+  
+  #now let us construct a DESeq2 object
+  library(DESeq2)
+  
+  sampleTable <- data.frame(condition=samples$condition[tocompare], species=samples$species[tocompare])
+  #rownames(sampleTable) <- colnames(txi$counts) #it is NA
+  rownames(sampleTable) <- samples$sample[tocompare]
+  colnames(txi$counts) <- samples$sample[tocompare]
+  
+  dds <- DESeqDataSetFromTximport(txi, sampleTable, ~species)
+  
+  keep <- rowSums(counts(dds)) >= 10
+  dds <- dds[keep,]
+  #80 to 20 Mb It's great but how would I now match back? It would be quite complicated
+  
+  #differential expression! 
+  dds <- DESeq(dds)
+  res <- results(dds)
+  res$log10padj <- -log10(res$padj)
+  
+  ##mcols(res)$description
+  
+  #Transformed data for some playing around
+  #vsd <- vst(dds, blind=FALSE)
+  #plotPCA(vsd, intgroup=c("species"))
+  
+  #svg(filename = paste0(thispecies[1], thispecies[2],"_PCA",".svg"), 
+  #    width=3.5, height=3.5)
+  #pl <- plotPCA(vsd, intgroup=c("species")) + 
+  #  ggtitle(paste0(thispecies, theseconditions[2])) +
+  #  theme_bw() +  scale_color_manual(values = c("black", "red")) 
+  #print(pl)
+  #dev.off()
+  
+  # sampleDists <- dist(t(assay(vsd)))
+  # ###clustering
+  # library("RColorBrewer")
+  # library("pheatmap") 
+  # sampleDistMatrix <- as.matrix(sampleDists)
+  # rownames(sampleDistMatrix) <- colnames(vsd)
+  # colnames(sampleDistMatrix) <- NULL
+  # 
+  # colors <- colorRampPalette( rev(brewer.pal(9, thispalette)))(255)
+  # 
+  # # svg(filename = paste0(thispecies,theseconditions[2], "_clust",".svg"), 
+  # #     width=6, height=4)
+  #  pheatmap(sampleDistMatrix,
+  #           clustering_distance_rows=sampleDists,
+  #           clustering_distance_cols=sampleDists,
+  #           col=colors, fontsize = 16)
+  # # #ok, it looks fine
+  # # dev.off()
+  # # 
+  resOrdered <- res[order(res$log2FoldChange),]
+  
+  write.csv(resOrdered, paste0(thispecies[1], thispecies[2], theseconditions[1], "_ordered.csv"))
+  
+  
+  return(resOrdered)
+  
+}
+
+
+filterTaxonInter <- function(thispecies, theseconditions, logFCthreshold = 3) {
+  
+  #now, get colors right
+  palette <- c("Blues", "Greens", "Oranges")
+  ##colors <- c("blue4", "green4", "orange4")
+  ##colors <- c("#0072B2", "#009E73", "#D55E00") #should be the color blind friendly panel but....
+  ##colors <- c("#56B4E9", "#007656", "#D55E00") #I see it. Coblis does as well. Blue, green, orange
+  colors <- c("#4087AF", "#007656", "#D55E00") #I see it. Coblis does as well. Blue, green, orange
+  species <- c("Ecy", "Eve", "Gla")
+  
+  thispalette <- palette[which(species ==  thispecies[2])]
+  thiscolor <- colors[which(species == thispecies[2])]
+  #and get alpha
+  thisalpha <- ifelse(thispecies == "Ecy", 0.5, 0.3)
+  
+  #resOrdered <- read.csv(paste0(thispecies[1],thispecies[2],theseconditions,"_ordered.csv"), stringsAsFactors = F)
+  ##or 
+  resOrdered <- read.csv(paste0(thispecies[1],thispecies[2],theseconditions[2],"_ordered.csv"), stringsAsFactors = F)
+  
+  #Annotation (best blast hit + also taxonomical information)
+  diamond <- read.delim(
+    #        paste0("/media/main/sandbox/drozdovapb/DE/annotation/", thisassembly, ".diamond.tsv"), 
+    #paste0("/run/media/polina/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"),
+    paste0("~/Documents/transcriptome_annotation/", thisassembly, ".diamond.tsv"),
+    #    paste0("/media/drozdovapb/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"), 
+    head=F, stringsAsFactors = F)
+  names(diamond)[1] <- "gene"
+  diamond$V13 <- sapply(strsplit(diamond$V13, split=";"), '[', 1)
+  #names(res)[1] <- "gene"
+  #resOrdered$gene <- row.names(resOrdered)
+  #now as I've read those, it should be different
+  resOrdered$gene <- resOrdered$X
+  
+  premerged <- merge(y = diamond[,c(1,13,14)], x=as.data.frame(resOrdered), all.x=T, all.y=F , by="gene")
+  
+  #Annotation made by FunctionAnnotator  
+  fa <- read.delim(
+    #        paste0("/media/main/sandbox/drozdovapb/DE/annotation/", thisassembly, ".diamond.tsv"), 
+    #paste0("/run/media/polina/Elements/transcriptome/DE/3-annotation/", thisassembly, "_AnnotationTable.txt"),
+    paste0("~/Documents/transcriptome_annotation/", thisassembly, "_AnnotationTable.txt"),
+    #    paste0("/media/drozdovapb/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"), 
+    head=T, stringsAsFactors = F)
+  names(fa)[1] <- "gene"
+  
+  merged <- merge(y = fa[,c(1:3,7:9,22)], x=premerged, all.x=T, all.y=F , by="gene")
+  
+  #rename
+  names(merged)[which(names(merged) == "V13")] <- "taxon"
+  names(merged)[which(names(merged) == "V14")] <- "best.nr.hit.diamond"
+  
+  mergedOrdered <- merged[order(merged$log2FoldChange),]
+  ##remove the genes with unidentifiable padj, or they will colonize the downstream things
+  mergedOrdered <- mergedOrdered[complete.cases(mergedOrdered$padj),]
+  write.csv(mergedOrdered, paste0(thispecies[1],thispecies[2],theseconditions[2],"_vs_",theseconditions[1], "_annot.csv"))
+  
+  de <- mergedOrdered[abs(mergedOrdered$log2FoldChange) > logFCthreshold & mergedOrdered$padj < 0.001,]
+  write.csv(de, paste0(thispecies[1],thispecies[2],theseconditions[2],"_vs_",theseconditions[1], 
+                       logFCthreshold, "_annot_de.csv"))
+  
+  p1 <- volcanoplot(merged, thiscolor, thesecondi = theseconditions)
+  ggsave(paste0(thispecies[1],thispecies[2],theseconditions[2], theseconditions[1], logFCthreshold,".png"), 
          p1, width = 3, device="png", height = 3)
   
 }
