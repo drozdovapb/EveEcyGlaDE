@@ -259,6 +259,9 @@ setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/")
 ### Change here for another directory
 #setwd("~/Documents/Paper1_stresses/data_tables/")
 #setwd("~/Documents/Paper1_stresses/data_tables/full_assemblies_each_by_own/")
+setwd("/run/media/polina/082A-8B6C/Paper1_stresses/data_tables/interspecies/")
+
+setwd("~/Documents/Paper1_stresses/data_tables/decont_each_by_own/")
 
 for (file in dir()) {
   if(grepl("csv", file)) {
@@ -269,8 +272,8 @@ for (file in dir()) {
     #  GOenrichment(filename = file, gocat = "MF", writeGenes = T)
     #  GOenrichment(filename = file, upORdown = "down", gocat = "MF", writeGenes = T)
     # ## Biological process, logFC 1
-      #GOenrichment(filename = file, gocat = "BP", logFCthreshold = 3, writeGenes = T)
-      #GOenrichment(filename = file, upORdown = "down", logFCthreshold = 3, writeGenes = T)
+      GOenrichment(filename = file, gocat = "BP", logFCthreshold = 3, writeGenes = T)
+      GOenrichment(filename = file, upORdown = "down", logFCthreshold = 3, writeGenes = T)
     # ## Molecular function, logFC 1
      #GOenrichment(filename = file, gocat = "MF", logFCthreshold = 3, writeGenes = T)
      #GOenrichment(filename = file, upORdown = "down", gocat = "MF", logFCthreshold = 3, writeGenes = T)
@@ -279,14 +282,14 @@ for (file in dir()) {
     #GOenrichment(filename = file, gocat = "CC", upORdown = "down", logFCthreshold = 3, writeGenes = T)
     
     
-    GOenrichment(filename = file, gocat = "BP", logFCthreshold = 1, writeGenes = T, padj.threshold = 0.05)
-    GOenrichment(filename = file, upORdown = "down", logFCthreshold = 1, writeGenes = T, padj.threshold = 0.05)
+    #GOenrichment(filename = file, gocat = "BP", logFCthreshold = 1, writeGenes = T, padj.threshold = 0.05)
+    #GOenrichment(filename = file, upORdown = "down", logFCthreshold = 1, writeGenes = T, padj.threshold = 0.05)
     # ## Molecular function, logFC 1
-    #GOenrichment(filename = file, gocat = "MF", logFCthreshold = 3, writeGenes = T)
-    #GOenrichment(filename = file, upORdown = "down", gocat = "MF", logFCthreshold = 3, writeGenes = T)
+    GOenrichment(filename = file, gocat = "MF", logFCthreshold = 3, writeGenes = T)
+    GOenrichment(filename = file, upORdown = "down", gocat = "MF", logFCthreshold = 3, writeGenes = T)
     ## Cellular component (just in case)
-    #GOenrichment(filename = file, gocat = "CC", logFCthreshold = 3, writeGenes = T)
-    #GOenrichment(filename = file, gocat = "CC", upORdown = "down", logFCthreshold = 3, writeGenes = T)
+    GOenrichment(filename = file, gocat = "CC", logFCthreshold = 3, writeGenes = T)
+    GOenrichment(filename = file, gocat = "CC", upORdown = "down", logFCthreshold = 3, writeGenes = T)
     
       }}
 
@@ -296,6 +299,8 @@ for (file in dir()) {
 setwd("~/Documents/Paper2_time_series/compare_controls/data_tables/")
 ### Change here for another directory
 setwd("~/Documents/Paper1_stresses/data_tables/interspecies/new")
+
+setwd("~/Documents/Paper2_time_series/compare_controls/data_tables/Only_adjacent/")
 
 for (file in dir()) {
   if(grepl("csv", file)) {
@@ -327,6 +332,13 @@ setwd("~/Documents/Paper1_stresses/data_tables/reduced_each_by_own/GO_FC3_padj_0
   downph <- gogo("Ph", "down")
   upacph <- gogo("PhB", "up")
   downacph <- gogo("PhB", "down")
+  
+setwd("~/Documents/Paper1_stresses/data_tables/decont_each_by_own/GO_FC3_padj_0.001_BP/")
+upp <- gogo("LT10", "up", suffix = "decont")
+downp <- gogo("LT10", "down", suffix = "decont")
+upcd <- gogo("Cd", "up", suffix = "decont")
+downcd <- gogo("Cd", "down", suffix = "decont")
+
 
 ### For full assemblies we need a switch, as the files are named differently
 setwd("~/Documents/Paper1_stresses/data_tables/full_assemblies_each_by_own/GO1BP/")

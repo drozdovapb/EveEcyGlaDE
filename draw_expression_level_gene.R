@@ -43,6 +43,9 @@ gla <- read.delim("../Paper2_time_series/gla_all.cnt", sep = " ")
 gla_ac_sp <- samples[samples$species == "Gla" & samples$condition %in% paper1_samples, "sample"]
 glaa <- gla[, c(1, which(names(gla) %in% gla_ac_sp))]
 write.csv(glaa, "gla_paper1.cnt.csv", row.names = F)
+
+
+
 #####
 
 #read data.
@@ -68,7 +71,7 @@ draw_by_term <- function(term, dat = datv, annotation = diamondv, species = "Eve
     datmelt$sample <- as.character(datmelt$Sample)
     datmelt$samplegroup <- sapply(datmelt$sample, function(x) strsplit(x, "_")[[1]][1])
     datmelt$condition <- substr(datmelt$samplegroup, 4, 20)
-    datmelt$fcondition <- factor(datmelt$condition, levels = c("B6", "B12", "B18", "B24", "B3", 
+    datmelt$fcondition <- factor(datmelt$condition, levels = c("B3", "B6", "B12", "B18", "B24", 
                                                                "T12", "T18", "T24", "10LT3", "10LT24",
                                                                "Cd3", "Cd24", "PB3", "PB24", "P3", "P24"))
     #datmelt$fcondition <- factor(datmelt$condition, levels = c("B6", "B12", "B18", "B24",  
@@ -100,7 +103,7 @@ draw_by_id <- function(id, dat = datv, annotation = diamondv, species = "Eve") {
     datmelt$sample <- as.character(datmelt$Sample)
     datmelt$samplegroup <- sapply(datmelt$sample, function(x) strsplit(x, "_")[[1]][1])
     datmelt$condition <- substr(datmelt$samplegroup, 4, 20)
-    datmelt$fcondition <- factor(datmelt$condition, levels = c("B6", "B12", "B18", "B24", "B3", 
+    datmelt$fcondition <- factor(datmelt$condition, levels = c("B3", "B6", "B12", "B18", "B24", 
                                                                "T12", "T18", "T24", "10LT3", "10LT24",
                                                                "Cd3", "Cd24", "PB3", "PB24", "P3", "P24"))
     #datmelt$fcondition <- factor(datmelt$condition, levels = c("B6", "B12", "B18", "B24", 
@@ -132,6 +135,8 @@ drawmeplease("cytochrome c oxidase subunit I")
 drawmeplease("citrate")
 
 
+setwd("/homes/brauerei/polina/Documents/Paper2_time_series/")
+
 ## But so far we're the most interested in gradual temperature increase
 #evedat <- read.delim("./eve_all.cnt", sep = " ")
 evedat <- read.csv("./eve_T.cnt.csv")
@@ -139,14 +144,17 @@ ecydat <- read.csv("./ecy_T.cnt.csv")
 gladat <- read.csv("./gla_T.cnt.csv")
 
 
+
+
 eveALLdat <- read.csv("./eve_all.cnt", sep = " ")
 ecyALLdat <- read.csv("./ecy_all.cnt", sep = " ")
 glaALLdat <- read.csv("./gla_all.cnt", sep = " ")
 
 #paper 1 data
-
-eveTCdat <- read.csv("./eve_paper1.cnt.csv)
-
+setwd("/homes/brauerei/polina/Documents/Paper1_stresses/counts/")
+eveTCdat <- read.csv("./eve_paper1.cnt.csv")
+ecyTCdat <- read.csv("./ecy_paper1.cnt.csv")
+glaTCdat <- read.csv("./gla_paper1.cnt.csv")
 
 diamondv <- read.delim("~/Documents/transcriptome_annotation/EveBCdTP1_ani.diamond.tsv", head = F,
                        stringsAsFactors = F)
@@ -184,3 +192,45 @@ draw_by_term("vitellogenin", dat = gladat, annotation=diamondl, species = "Gla")
 
 #COX3 in Eve
 draw_by_id("TRINITY_DN280825_c0_g1_i1", dat = eveALLdat, annotation = diamondv, species = "Eve")
+
+
+draw_by_id("TRINITY_DN280825_c0_g1_i1", dat = eveTCdat, annotation = diamondv, species = "Eve")
+
+draw_by_id("TRINITY_DN280825", dat = eveTCdat, annotation = diamondv, species = "Eve")
+
+draw_by_term("COX3", dat = eveTCdat, annotation = diamondv, species = "Eve")
+draw_by_term("COX3", dat = ecyTCdat, annotation = diamondc, species = "Ecy")
+draw_by_term("COX3", dat = glaTCdat, annotation = diamondl, species = "Gla")
+
+draw_by_term("COX", dat = eveTCdat, annotation = diamondv, species = "Eve")
+
+
+draw_by_term("glutathione S-transferase", dat = eveTCdat, annotation = diamondv, species = "Eve")
+
+
+#DE GSTs
+draw_by_id("TRINITY_DN376419_c0_g2_i3", dat = eveTCdat, annotation = diamondv, species = "Eve")
+draw_by_id("TRINITY_DN376419_c0_g2_i6", dat = eveTCdat, annotation = diamondv, species = "Eve")
+
+#E. cyaneus
+draw_by_id("TRINITY_DN484746_c2_g1_i7", dat = ecyTCdat, annotation = diamondc, species = "Ecy")
+draw_by_id("TRINITY_DN493696_c0_g1_i5", dat = ecyTCdat, annotation = diamondc, species = "Ecy")
+draw_by_id("TRINITY_DN489637_c0_g2_i2", dat = ecyTCdat, annotation = diamondc, species = "Ecy")
+
+
+draw_by_term("ribosomal protein", dat = eveTCdat, annotation = diamondv, species = "Eve")
+
+
+draw_by_term("XP_015912981.1 heat shock protein 70 B2-like", 
+             dat = eveALLdat, annotation = diamondv, species = "Eve")
+
+
+draw_by_term("heat shock protein 70 B2-like", 
+             dat = ecyALLdat, annotation = diamondc, species = "Ecy")
+
+draw_by_term("XP_015912981.1 heat shock protein 70 B2-like", 
+             dat = ecyALLdat, annotation = diamondc, species = "Gla")
+
+
+draw_by_term("AEC33277.1 14-3-3 protein, partial", 
+             dat = eveALLdat, annotation = diamondv, species = "Eve")

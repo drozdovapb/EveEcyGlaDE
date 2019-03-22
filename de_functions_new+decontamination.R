@@ -112,6 +112,18 @@ perform.de <- function(dir, thispecies, theseconditions) {
     
     ##mcols(res)$description
     
+    resOrdered <- res[order(res$log2FoldChange),]
+    
+    write.csv(resOrdered, paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1],"_ordered.csv"))
+    
+    ##and some info for me
+    message("number of DE genes for absolute log FC threshold = 1")
+    temp <- resOrdered[complete.cases(resOrdered$padj), ]
+    print(nrow(temp[abs(temp$log2FoldChange) > 1 & temp$padj < 0.001,]))
+    message("number of DE genes for absolute log FC threshold = 3")
+    print(nrow(temp[abs(temp$log2FoldChange) > 3 & temp$padj < 0.001,]))
+    
+    
     #Transformed data for some playing around
     vsd <- vst(dds, blind=FALSE)
     plotPCA(vsd, intgroup=c("condition"))
@@ -119,8 +131,8 @@ perform.de <- function(dir, thispecies, theseconditions) {
     svg(filename = paste0(thispecies, theseconditions[2],"_PCA",".svg"), 
         width=3.5, height=3.5)
     pl <- plotPCA(vsd, intgroup=c("condition")) + 
-        ggtitle(paste0(thispecies, theseconditions[2])) +
-                    theme_bw() +  scale_color_manual(values = c("black", "red")) 
+      ggtitle(paste0(thispecies, theseconditions[2])) +
+      theme_bw() +  scale_color_manual(values = c("black", "red")) 
     print(pl)
     dev.off()
     
@@ -142,18 +154,6 @@ perform.de <- function(dir, thispecies, theseconditions) {
              col=colors, fontsize = 16)
     #ok, it looks fine
     dev.off()
-    
-    resOrdered <- res[order(res$log2FoldChange),]
-    
-    write.csv(resOrdered, paste0(thispecies,theseconditions[2],"_vs_",theseconditions[1],"_ordered.csv"))
-    
-    ##and some info for me
-    message("number of DE genes for absolute log FC threshold = 1")
-    temp <- resOrdered[complete.cases(resOrdered$padj), ]
-    print(nrow(temp[abs(temp$log2FoldChange) > 1 & temp$padj < 0.001,]))
-    message("number of DE genes for absolute log FC threshold = 3")
-    print(nrow(temp[abs(temp$log2FoldChange) > 3 & temp$padj < 0.001,]))
-    
     #return(resOrdered)
     
 }
@@ -283,7 +283,8 @@ filterTaxonReduced <- function(thispecies, theseconditions, logFCthreshold = 3) 
   #Annotation (best blast hit + also taxonomical information)
   diamond <- read.delim(
     #        paste0("/media/main/sandbox/drozdovapb/DE/annotation/", thisassembly, ".diamond.tsv"), 
-    paste0("/run/media/polina/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"),
+    #paste0("/run/media/polina/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"),
+    paste0("~/Documents/transcriptome_annotation/", thisassembly, ".diamond.tsv"),
     #    paste0("/media/drozdovapb/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"), 
     head=F, stringsAsFactors = F)
   names(diamond)[1] <- "gene"
@@ -298,7 +299,8 @@ filterTaxonReduced <- function(thispecies, theseconditions, logFCthreshold = 3) 
   #Annotation made by FunctionAnnotator  
   fa <- read.delim(
     #        paste0("/media/main/sandbox/drozdovapb/DE/annotation/", thisassembly, ".diamond.tsv"), 
-    paste0("/run/media/polina/Elements/transcriptome/DE/3-annotation/", thisassembly, "_AnnotationTable.txt"),
+    paste0("~/Documents/transcriptome_annotation/", thisassembly, "_AnnotationTable.txt"),
+    #paste0("/run/media/polina/Elements/transcriptome/DE/3-annotation/", thisassembly, "_AnnotationTable.txt"),
     #    paste0("/media/drozdovapb/Elements/transcriptome/DE/3-annotation/", thisassembly, ".diamond.tsv"), 
     head=T, stringsAsFactors = F)
   names(fa)[1] <- "gene"
@@ -416,22 +418,23 @@ perform.de.inter <- function(dir, thispecies, theseconditions) {
   #txi <- tximport(files, type = "salmon", txOut=TRUE)
   #it would never work at my laptop
   
-  tocompare <- which(samples$species %in% thispecies & samples$condition %in% theseconditions)
+  tocompare <- which(samples$species %in% thispecies & samples$condition_ %in% theseconditions)
   txi <- tximport(files[tocompare], type = "salmon", txOut=TRUE)
   #should be read in several minutes...
   
   #now let us construct a DESeq2 object
   library(DESeq2)
   
-  sampleTable <- data.frame(condition=samples$condition[tocompare], species=samples$species[tocompare])
+  sampleTable <- data.frame(condition=samples$condition_[tocompare], species=samples$species[tocompare])
   #rownames(sampleTable) <- colnames(txi$counts) #it is NA
   rownames(sampleTable) <- samples$sample[tocompare]
   colnames(txi$counts) <- samples$sample[tocompare]
   
   dds <- DESeqDataSetFromTximport(txi, sampleTable, ~species)
   
-  keep <- rowSums(counts(dds)) >= 10
-  dds <- dds[keep,]
+  ## this time don't get rid of anything, we have way too less data...
+  #keep <- rowSums(counts(dds)) >= 10
+  #dds <- dds[keep,]
   #80 to 20 Mb It's great but how would I now match back? It would be quite complicated
   
   #differential expression! 
