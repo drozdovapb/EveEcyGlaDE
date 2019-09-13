@@ -57,14 +57,18 @@ GOenrichment <- function(filename, sep = ",", upORdown = "up", gocat = "BP",
   #get GO terms
   if (gocat == "BP") BP <- withAnnotation[,c("Sequence.Name", "GO.Biological.Process")]
   if (gocat == "MF") BP <- withAnnotation[,c("Sequence.Name", "GO.Molecular.Function")]
+  if (gocat == "CC") BP <- withAnnotation[,c("Sequence.Name", "GO.Cellular.Component")]
+  
   
   #get only non-empty ones (I just cannot analyze all the rest)
   if (gocat == "BP") BPGO <- BP[BP$GO.Biological.Process != "-",]
   if (gocat == "MF")BPGO <- BP[BP$GO.Molecular.Function != "-",]
+  if (gocat == "CC")BPGO <- BP[BP$GO.Cellular.Component != "-",]
   #get all GO terms in machine-readable way (in a list + without names, only numbers)
   
   if (gocat == "BP") GOs <- strsplit(BPGO$GO.Biological.Process, split = "| ", fixed = T)
   if (gocat == "MF") GOs <- strsplit(BPGO$GO.Molecular.Function, split = "| ", fixed = T)
+  if (gocat == "CC") GOs <- strsplit(BPGO$GO.Cellular.Component, split = "| ", fixed = T)
   names(GOs) <- BPGO$Sequence.Name
   
   GOsTop <- lapply(X = GOs, function(x) gsub(" .*", "", x)) #remove human-readable name
@@ -93,7 +97,7 @@ GOenrichment <- function(filename, sep = ",", upORdown = "up", gocat = "BP",
   if (!dir.name %in% dir()) dir.create(dir.name)
   #full table
   names(allRes)[6] <- "p-value"
-  write.csv(allRes, paste0(filename, "GO", upORdown, "_all", ".csv"))
+  write.csv(allRes, paste0(filename, "GO", gocat, upORdown, "_all", ".csv"))
   ## i tried with subdirectories, but they do not work if the original file was not in the same folder
   signif_at_0.001 <- sum(f@score < 0.001)
   Res <- allRes[1:signif_at_0.001, ]  #allRes$`p-value` < 0.001, doesn't work properly
@@ -153,7 +157,7 @@ GOenrichment(filename = "salmon/Ecy.isoform.counts.matrix.Ph24_vs_PB24.DESeq2.DE
 
 
 
-
+FA_filename = "~/Research/Projects/DE/annotation/EveBCdTP1_cor_AnnotationTable.txt"
 ##Eve, 3h, solvent
 GOenrichment(filename = "salmon/Eve.isoform.counts.matrix.PB03_vs_B03.DESeq2.DE_results", 
              upORdown = "up", gocat = "BP", sep = "\t", 
@@ -188,33 +192,141 @@ GOenrichment(filename = "salmon/Eve.isoform.counts.matrix.Ph24_vs_PB24.DESeq2.DE
 
 
 
-
+FA_filename = "~/Research/Projects/DE/annotation/GlaBCdTP1_cor_AnnotationTable.txt"
 ##Gla, 3h, solvent
-GOenrichment(filename = "../new_DE_comparison/salmon/Gla.isoform.counts.matrix.PB03_vs_B03.DESeq2.DE_results", 
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.PB03_vs_B03.DESeq2.DE_results", 
              upORdown = "up", gocat = "BP", sep = "\t", 
-             FA_filename = FA_filename, DEfilename = "../new_DE_comparison/PB03_vs_B03.Glacommon_DE.csv")
-GOenrichment(filename = "../new_DE_comparison/salmon/Gla.isoform.counts.matrix.PB03_vs_B03.DESeq2.DE_results", 
+             FA_filename = FA_filename, DEfilename = "PB03_vs_B03.Glacommon_DE.csv")
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.PB03_vs_B03.DESeq2.DE_results", 
              upORdown = "down", gocat = "BP", sep = "\t", 
-             FA_filename = FA_filename, DEfilename = "../new_DE_comparison/PB03_vs_B03.Glacommon_DE.csv")
+             FA_filename = FA_filename, DEfilename = "PB03_vs_B03.Glacommon_DE.csv")
 ##Gla, 3h, phenanthrene
-GOenrichment(filename = "../new_DE_comparison/salmon/Gla.isoform.counts.matrix.Ph03_vs_PB03.DESeq2.DE_results", 
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.Ph03_vs_PB03.DESeq2.DE_results", 
              upORdown = "down", gocat = "BP", sep = "\t", 
-             FA_filename = FA_filename, DEfilename = "../new_DE_comparison/Ph03_vs_PB03.Glacommon_DE.csv")
-GOenrichment(filename = "../new_DE_comparison/salmon/Gla.isoform.counts.matrix.Ph03_vs_PB03.DESeq2.DE_results", 
+             FA_filename = FA_filename, DEfilename = "Ph03_vs_PB03.Glacommon_DE.csv")
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.Ph03_vs_PB03.DESeq2.DE_results", 
              upORdown = "down", gocat = "BP", sep = "\t", 
-             FA_filename = FA_filename, DEfilename = "../new_DE_comparison/Ph03_vs_PB03.Glacommon_DE.csv")
+             FA_filename = FA_filename, DEfilename = "Ph03_vs_PB03.Glacommon_DE.csv")
 
 ##Gla, 24h, solvent
-GOenrichment(filename = "../new_DE_comparison/salmon/Gla.isoform.counts.matrix.PB24_vs_B24h.DESeq2.DE_results", 
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.PB24_vs_B24h.DESeq2.DE_results", 
              upORdown = "up", gocat = "BP", sep = "\t", 
-             FA_filename = FA_filename, DEfilename = "../new_DE_comparison/PB24_vs_B24h.Glacommon_DE.csv")
-GOenrichment(filename = "../new_DE_comparison/salmon/Gla.isoform.counts.matrix.PB24_vs_B24h.DESeq2.DE_results", 
+             FA_filename = FA_filename, DEfilename = "PB24_vs_B24h.Glacommon_DE.csv")
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.PB24_vs_B24h.DESeq2.DE_results", 
              upORdown = "down", gocat = "BP", sep = "\t", 
-             FA_filename = FA_filename, DEfilename = "../new_DE_comparison/PB24_vs_B24h.Glacommon_DE.csv")
+             FA_filename = FA_filename, DEfilename = "PB24_vs_B24h.Glacommon_DE.csv")
 ##Gla, 24h, phenanthrene
-GOenrichment(filename = "../new_DE_comparison/salmon/Gla.isoform.counts.matrix.Ph24_vs_PB24.DESeq2.DE_results", 
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.Ph24_vs_PB24.DESeq2.DE_results", 
              upORdown = "down", gocat = "BP", sep = "\t", 
-             FA_filename = FA_filename, DEfilename = "../new_DE_comparison/Ph24_vs_PB24.Glacommon_DE.csv")
-GOenrichment(filename = "../new_DE_comparison/salmon/Gla.isoform.counts.matrix.Ph24_vs_PB24.DESeq2.DE_results", 
+             FA_filename = FA_filename, DEfilename = "Ph24_vs_PB24.Glacommon_DE.csv")
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.Ph24_vs_PB24.DESeq2.DE_results", 
              upORdown = "down", gocat = "BP", sep = "\t", 
-             FA_filename = FA_filename, DEfilename = "../new_DE_comparison/Ph24_vs_PB24.Glacommon_DE.csv")
+             FA_filename = FA_filename, DEfilename = "Ph24_vs_PB24.Glacommon_DE.csv")
+
+
+##MF
+################
+
+
+
+##CC
+################
+##CC
+FA_filename = "~/Research/Projects/DE/annotation/EcyBCdTP1_cor_AnnotationTable.txt"
+##Ecy, 3h, solvent
+GOenrichment(filename = "salmon/Ecy.isoform.counts.matrix.PB03_vs_B03.DESeq2.DE_results", 
+             upORdown = "up", gocat = "CC", sep = "\t", writeGenes = T,
+             FA_filename = FA_filename, DEfilename = "PB03_vs_B03.Ecycommon_DE.csv")
+GOenrichment(filename = "salmon/Ecy.isoform.counts.matrix.PB03_vs_B03.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "PB03_vs_B03.Ecycommon_DE.csv")
+##Ecy, 3h, phenanthrene
+GOenrichment(filename = "salmon/Ecy.isoform.counts.matrix.Ph03_vs_PB03.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "Ph03_vs_PB03.Ecycommon_DE.csv")
+GOenrichment(filename = "salmon/Ecy.isoform.counts.matrix.Ph03_vs_PB03.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "Ph03_vs_PB03.Ecycommon_DE.csv")
+
+##Ecy, 24h, solvent
+GOenrichment(filename = "salmon/Ecy.isoform.counts.matrix.PB24_vs_B24h.DESeq2.DE_results", 
+             upORdown = "up", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "PB24_vs_B24h.Ecycommon_DE.csv")
+GOenrichment(filename = "salmon/Ecy.isoform.counts.matrix.PB24_vs_B24h.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "PB24_vs_B24h.Ecycommon_DE.csv")
+##Ecy, 24h, phenanthrene
+GOenrichment(filename = "salmon/Ecy.isoform.counts.matrix.Ph24_vs_PB24.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "Ph24_vs_PB24.Ecycommon_DE.csv")
+GOenrichment(filename = "salmon/Ecy.isoform.counts.matrix.Ph24_vs_PB24.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "Ph24_vs_PB24.Ecycommon_DE.csv")
+
+
+
+FA_filename = "~/Research/Projects/DE/annotation/EveBCdTP1_cor_AnnotationTable.txt"
+##Eve, 3h, solvent
+GOenrichment(filename = "salmon/Eve.isoform.counts.matrix.PB03_vs_B03.DESeq2.DE_results", 
+             upORdown = "up", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "PB03_vs_B03.Evecommon_DE.csv")
+GOenrichment(filename = "salmon/Eve.isoform.counts.matrix.PB03_vs_B03.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "PB03_vs_B03.Evecommon_DE.csv")
+##Eve, 3h, phenanthrene
+GOenrichment(filename = "salmon/Eve.isoform.counts.matrix.Ph03_vs_PB03.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "Ph03_vs_PB03.Evecommon_DE.csv")
+GOenrichment(filename = "salmon/Eve.isoform.counts.matrix.Ph03_vs_PB03.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "Ph03_vs_PB03.Evecommon_DE.csv")
+
+##Eve, 24h, solvent
+GOenrichment(filename = "salmon/Eve.isoform.counts.matrix.PB24_vs_B24h.DESeq2.DE_results", 
+             upORdown = "up", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "PB24_vs_B24h.Evecommon_DE.csv")
+GOenrichment(filename = "salmon/Eve.isoform.counts.matrix.PB24_vs_B24h.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "PB24_vs_B24h.Evecommon_DE.csv")
+##Eve, 24h, phenanthrene
+GOenrichment(filename = "salmon/Eve.isoform.counts.matrix.Ph24_vs_PB24.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "Ph24_vs_PB24.Evecommon_DE.csv")
+GOenrichment(filename = "salmon/Eve.isoform.counts.matrix.Ph24_vs_PB24.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "Ph24_vs_PB24.Evecommon_DE.csv")
+
+
+
+
+
+FA_filename = "~/Research/Projects/DE/annotation/GlaBCdTP1_cor_AnnotationTable.txt"
+##Gla, 3h, solvent
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.PB03_vs_B03.DESeq2.DE_results", 
+             upORdown = "up", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "PB03_vs_B03.Glacommon_DE.csv")
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.PB03_vs_B03.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "PB03_vs_B03.Glacommon_DE.csv")
+##Gla, 3h, phenanthrene
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.Ph03_vs_PB03.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "Ph03_vs_PB03.Glacommon_DE.csv")
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.Ph03_vs_PB03.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "Ph03_vs_PB03.Glacommon_DE.csv")
+
+##Gla, 24h, solvent
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.PB24_vs_B24h.DESeq2.DE_results", 
+             upORdown = "up", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "PB24_vs_B24h.Glacommon_DE.csv")
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.PB24_vs_B24h.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "PB24_vs_B24h.Glacommon_DE.csv")
+##Gla, 24h, phenanthrene
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.Ph24_vs_PB24.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "Ph24_vs_PB24.Glacommon_DE.csv")
+GOenrichment(filename = "salmon/Gla.isoform.counts.matrix.Ph24_vs_PB24.DESeq2.DE_results", 
+             upORdown = "down", gocat = "CC", sep = "\t", 
+             FA_filename = FA_filename, DEfilename = "Ph24_vs_PB24.Glacommon_DE.csv")
