@@ -1,0 +1,862 @@
+%\documentclass[12pt]{report}		 %it has non-through numbering of figures. Is it good? I don't know
+\documentclass[12pt]{article}
+
+%margins
+\usepackage{geometry} 
+	\geometry{top=20mm}
+	\geometry{bottom=25mm}
+	\geometry{left=20mm}
+	\geometry{right=25mm}
+
+\usepackage{enumitem}
+\setlist{itemsep=2pt,parsep=4pt,topsep=2pt,partopsep=4pt}
+
+\usepackage[small]{caption}
+\usepackage{wrapfig}
+
+%table splitting between pages
+\usepackage{longtable}
+
+%for dotted lines in tables
+\usepackage{arydshln}
+%tables
+\usepackage{multirow}
+
+\usepackage[colorlinks=true,urlcolor=blue,citecolor=blue,linkcolor=Periwinkle]{hyperref}
+\usepackage[dvipsnames]{xcolor} %for custom colors
+
+\usepackage{tikz} %for the colored bar
+%\usepackage[all]{background} %for placing color bars on each page
+%no. It adds a watermark 'Draft' onto the first page.
+
+%fonts
+%\usepackage{lmodern}
+%\usepackage{newtxtext,newtxmath}
+%\usepackage[letterspace=160,babel=true,tracking=true,kerning=true]{microtype}
+
+\setlength\abovecaptionskip{0.1cm}
+
+
+%Bibliography
+\usepackage{csquotes}
+\usepackage[backend=biber,style=authoryear,useauthor=true,uniquename=false]{biblatex}
+\addbibresource{references.bib}
+
+%better control of floats
+\usepackage{float}
+
+\usepackage{textcomp}
+
+
+\makeatletter
+\patchcmd{\@maketitle}{\LARGE}{\Large}{}{}
+\makeatother
+
+\usepackage{titlesec}
+% % %\titleformat{\title}{\tiny}{\thetitle}{1em}{}
+%\titleformat{\chapter}
+%  {\normalfont\Large\bfseries}{\thechapter}{1em}{}
+%\titlespacing*{\chapter}{0pt}{3.5ex plus 1ex minus .2ex}{2.3ex plus .2ex}
+\titleformat{\section}{\Large\bfseries}{\thesection}{1em}{}
+
+\title{Differential gene expression under various stressful conditions in \textit{Eulimnogammarus verrucosus} (Gerstfeldt, 1858), \\ \textit{E.~cyaneus} (Dybowsky, 1874) and \textit{Gammarus lacustris}  Sars, 1863 assessed with RNA sequencing \\ \vskip 5mm \large
+Work in progress report}
+
+\author{Polina Drozdova}
+
+%item labels
+\renewcommand{\labelitemi}{$\circ$}
+
+%color tables 
+\usepackage{color, colortbl}
+%colors
+\definecolor{ver}{rgb}{0.62, 1, 0.62}
+\definecolor{lac}{rgb}{1, 0.92, 0.60}
+\definecolor{cya}{rgb}{0.49, 1, 1}
+
+
+
+%	%fancy tables
+%	\usepackage{tcolorbox}
+%	\usepackage{tabularx}
+%	\usepackage{array}
+%	\usepackage{colortbl}
+%	\tcbuselibrary{skins}
+%	
+%	\newcolumntype{Y}{>{\raggedleft\arraybackslash}X}
+%	
+%	\tcbset{tab1/.style={fonttitle=\bfseries\large,fontupper=\normalsize\sffamily,
+%	colback=yellow!10!white,colframe=red!75!black,colbacktitle=Salmon!40!white,
+%	coltitle=black,center title,freelance,frame code={
+%	\foreach \n in {north east,north west,south east,south west}
+%	{\path [fill=red!75!black] (interior.\n) circle (3mm); };},}}
+%	
+%	\tcbset{tab2/.style={enhanced,fonttitle=\bfseries,fontupper=\normalsize\sffamily,
+%	colback=white,colframe=green!20!black,colbacktitle=green!40!white,
+%	coltitle=black,center title}}
+
+\begin{document}
+	\maketitle
+
+	
+%	  {\begin{tikzpicture}[remember picture,overlay]
+%%	    \node[yshift=-3cm] at (current page.north west)
+%	      {\begin{tikzpicture}[remember picture, overlay]
+%	        \draw[fill=blue] (18.5,-30) rectangle
+%	          %(\paperwidth,3cm);
+%	          (current page.north east);
+%	       \end{tikzpicture}
+%	
+%	      };
+%	   \end{tikzpicture}
+%	  }
+%	
+\newpage
+
+\tableofcontents
+
+\newpage 
+
+\section{Pipeline overview}
+
+Before we start, here is an overview of the pipeline used in the analysis presented below. 
+
+\begin{figure}[H]
+\includegraphics[width=.95\linewidth]{figs/pipeline.pdf}
+\caption{Pipeline overview (details below). The red asterisk marks the data in the attached tables.} 
+\label{pipeline}
+\end{figure}
+
+
+%{\let\clearpage\relax \chapter{(Hopefully almost) full list of software and methods}}
+%\section{(Hopefully almost) full list of software and methods}
+\section{Software}
+
+\textit{Disclaimer.} I decided to put all information about the software used here for the sake of keeping all version information in one place. Thereafter in the text, the code used to run particular analyses is shown for reproducibility (at least an example), while most of the code used to create figures or tables is omitted for the sake of clarity. 
+I do not think the following passage is an interesting reading, so please feel free to skip to Section \ref{Data}.
+\medskip
+	
+\noindent Read quality control: 
+\begin{itemize}
+\item FastQC (\cite{FastQC}) v0.11.5;
+\item MuliQC (\cite{MultiQC}) v1.2.
+\end{itemize}
+
+\noindent Trimming:
+\begin{itemize}
+\item trim\_galore (\cite{trim_galore}) v0.4.1.
+\end{itemize}
+
+\noindent Read error correction:
+\begin{itemize}
+\item rcorrector (\cite{Song2015}) (cloned from Github on Dec 18, 2017). 
+\end{itemize}
+
+\noindent Assembly:
+\begin{itemize}
+\item Trinity (\cite{Grabherr2011}) v2.5.1.
+\end{itemize}
+
+\noindent Assembly quality control, annotation and comparison:
+\begin{itemize}
+\item TransRate (\cite{Smith-Unna2016}) v1.0.3;
+\item BUSCO (\cite{Simao2015}) v3.0.2.
+\item \href{http://transdecoder.github.io/}{Transdecoder} 5.0.1.
+\item \href{https://trinotate.github.io/}{Trinotate} v3.0.2. 
+%\item GOseq package \colorbox{yellow}{reference} v...
+\end{itemize}
+
+
+
+\noindent Alignment and mapping:
+\begin{itemize}
+\item bowtie (\cite{Langmead2012}) v2.1.0;
+\item standalone NCBI BLAST+ (\cite{Camacho2009}) v2.2.28+;
+\item diamond (\cite{Buchfink2014}) v0.9.10.111 and NCBI non-redundant protein sequence database of 10 October 2017;
+\item Salmon (\cite{Patro2017}) v0.9.1.
+\end{itemize}
+
+\noindent Differential expression:
+\begin{itemize}
+\item DESeq2 (\cite{Love2014}) v1.14.1;
+\item tximport (\cite{Soneson2015}) v1.2.0.
+\end{itemize}
+
+\noindent Miscellaneous / presentation:
+\begin{itemize}
+\item faidx (\cite{Shirley2015}) v0.5.3.1;
+\item R (\cite{RCoreTeam2017}) v3.3.2; 
+\item R packages: ggplot (\cite{Wickham2009}) v2.2.1. 
+\end{itemize}
+
+\newpage
+
+%allow chapter start at the same page
+%{\let\clearpage\relax \chapter{Data}}
+\section{Data} \label{Data}
+%		\subsection{Overview}
+		The next sections are more technical. Biological results start later (section \ref{annotation}).
+%		\subsection{Background \& motivation}
+
+Here is an overview of the data we have. It is shown in Fig. \ref{conditions_raw_reads} and Table \ref{conditions}, which basically summarize the same data but in a different way. So, we have deep sequencing data (hundreds millions reads) for \textit{E.~verrucosus} (control, Cd treatment and temperature) and 'usual' data (tens millions reads per sample) for multiple conditions (with appropriate controls). 
+
+\begin{figure}[H]
+\includegraphics[scale=.85]{figs/conditions_raw_reads}
+\caption{Amount of reads in all samples grouped by condition groups. Each sample is boxed. See Table \ref{conditions} for abbreviations. }
+\label{conditions_raw_reads}
+\end{figure}
+
+Please note that B stands for the control samples (6 \textdegree C in Baikal water). The samples labeled B12, B18 and (partly) B24 are parallel controls for the long-term exposure to rising temperature (0.8 \textdegree C per day); B3 and the remaining B24 samples are controls for 3h- and 24-long exposures to Cd (LC10) or temperature (LT10). 
+		
+	\begin{table}[H]
+	
+\vskip -10mm
+\setlength{\tabcolsep}{10pt}			
+%\setlength{\abovecaptionskip}{1cm} % Or whatever length
+%\setlength{\belowcaptionskip}{1cm} % Or whatever length
+
+	\caption{Summary statistics for raw reads prior to any manipulations.}
+	
+	\vskip 6pt
+%	\colorbox{green}{%
+\begingroup \fontsize{11pt}{12pt} \selectfont
+		\begin{tabular}{lllll}
+
+		Species & Condition & Code & M reads & \# samples \\ \hline
+		%\rowcolor{ver}
+		%\rowcolor{lac} 
+\textit{E. cyaneus} & Control, 3h & B3 & 264 & 4 \\
+~~--- // --- & Control, zero & B6 & 207 & 4 \\
+~~--- // --- & Control for T12 & B12 & 175 & 4 \\
+~~--- // --- & Control for T18 & B18 & 185 & 5 \\
+~~--- // --- & Control for T24 / 24h & B24 & 440 & 8 \\
+~~--- // --- & Cd (LC10), 3h & Cd3 & 232 & 4 \\
+~~--- // --- & Cd (LC10), 24h & Cd24 & 234 & 4 \\
+~~--- // --- & Phenantrene, 3h & P3 & 244 & 4 \\
+~~--- // --- & Phenantrene, 24h & P24 & 236 & 4 \\
+~~--- // --- & Phenantrene control, 3h & PB3 & 152 & 3 \\
+~~--- // --- & Phenantrene control, 24h & PB24 & 180 & 3 \\
+~~--- // --- & Temperature, 12 degrees & T12 & 125 & 3 \\
+~~--- // --- & Temperature, 18 degrees & T18 & 200 & 4 \\
+~~--- // --- & Temperature, 24 degrees & T24 & 188 & 4 \\
+~~--- // --- & Temperature (LT10), 3h & 10LT3 & 267 & 4 \\
+~~--- // --- & Temperature (LT10), 24h & 10LT24 & 228 & 4 \\ %\hline
+\textit{E. verrucosus} & Control, 1h? & B1 & 677 & 2 \\
+~~--- // --- & Control, 3h & B3 & 258 & 4 \\  % %~~--- // ---
+~~--- // --- & Control, zero & B6 & 210 & 4 \\  % %~~--- // ---
+~~--- // --- & Control for T12 & B12 & 230 & 4 \\
+~~--- // --- & Control for T18 & B18 & 250 & 4 \\
+~~--- // --- & Control for T24 / 24h & B24 & 378 & 6 \\
+~~--- // --- & Cd (LC10), 1h? & Cd1 & 533 & 1 \\
+~~--- // --- & Cd (LC10), 3h & Cd3 & 243 & 4 \\
+~~--- // --- & Cd (LC10), 24h & Cd24 & 232 & 4 \\
+~~--- // --- & Phenantrene, 3h & P3 & 240 & 4 \\
+~~--- // --- & Phenantrene, 24h & P24 & 261 & 4 \\
+~~--- // --- & Phenantrene control, 3h & PB3 & 99 & 2 \\
+~~--- // --- & Phenantrene control, 24h & PB24 & 171 & 4 \\
+~~--- // --- & Temperature control & T6 & 617  & 1 \\
+~~--- // --- & Temperature, 12 degrees & T12 & 198 & 3 \\
+~~--- // --- & Temperature, 18 degrees & T18 & 261 & 4 \\
+~~--- // --- & Temperature, 24 degrees & T24 & 701 & 5 \\
+~~--- // --- & Temperature (LT10), 3h & 10LT3 & 232 & 4 \\
+~~--- // --- & Temperature (LT10), 24h & 10LT24 & 174 & 4 \\
+\textit{G. lacustris} & Control, 3h & B3 & 176 & 4 \\
+~~--- // --- & Control, zero & B6 & 234 & 4 \\
+~~--- // --- & Control for T12 & B12 & 265 & 4 \\
+~~--- // --- & Control for T18 & B18 & 156 & 3 \\
+~~--- // --- & Control for T24 / 24h & B24 & 398 & 8 \\
+~~--- // --- & Cd (LC10), 3h & Cd3 & 154 & 3 \\
+~~--- // --- & Cd (LC10), 24h & Cd24 & 160 & 4 \\
+~~--- // --- & Phenantrene, 3h & P3 & 207 & 4 \\
+~~--- // --- & Phenantrene, 24h & P24 & 252 & 4 \\
+~~--- // --- & Phenantrene control, 3h & PB3 & 90 & 2 \\
+~~--- // --- & Phenantrene control, 24h & PB24 & 153 & 3 \\
+~~--- // --- & Temperature, 12 degrees & T12 & 223 & 4 \\
+~~--- // --- & Temperature, 18 degrees & T18 & 261 & 4 \\
+~~--- // --- & Temperature, 24 degrees & T24 & 126 & 3(?) \\
+~~--- // --- & Temperature (LT10), 3h & 10LT3 & 200 & 4 \\
+~~--- // --- & Temperature (LT10), 24h & 10LT24 & 132 & 3 \\ \hline
+	\end{tabular} 
+\endgroup
+%		}
+\smallskip \small \\
+~~--- // ---, the same as above. \\
+M reads, total number of sequence reads / 10\textsuperscript{6}. \\
+\# samples, number of samples for this condition (deeply sequenced among them). 
+\label{conditions}
+	\end{table}
+
+		
+%		\subsection{Results} \label{dataqcmm}
+		
+%		\begin{table}
+%	\begin{tcolorbox}[tab2,tabularx={X|X|X}]
+%	Species & Condition & M reads\\\hline\hline
+%	Sum   & 6000.00 & 9000.00 \\ 
+%	\end{tcolorbox}		
+%	\end{table}
+	
+
+%allow chapter start at the same page
+%{\let\clearpage\relax \chapter{Quality control \& my attempts to improve quality}}
+% or \chapter{Quality control} if you don't need it
+\section{Quality control}
+
+%		\subsection{Overview}
+%		you can always skip to...	
+		
+		
+%		\subsection{Background \& some explanations}
+		
+%		\subsection{Results} 
+
+
+		
+The first thing that should be done with any NGS reads is subjecting them to quality control. All samples were subjected to FastQC analysis (quite a standard procedure, \verb|fastqc Sample/*fq.zip| \verb|-o .|) and then summarized with MultiQC (\verb|multiqc .|). 
+The results shown here come from concatenated R1/R2 files for each Sample + condition and only for \textit{E. verrucosus} deep sequencing reads, but they adequately represent the overall picture. 
+		
+Let us look at metrics that reflect purely technical characteristics of the library, quality scores and adapter content. The quality is very good, no need to adjust anything (the greener the better, and our data do not even touch the yellow region; Fig. \ref{Eve_deep_fastqc_tech}A). All sequences were 100 base pairs long (not shown). So far, so good, but if we look at the adapter content (Fig. \ref{Eve_deep_fastqc_tech}B), we'll see a significant elevation starting at \textit{ca.} 30 bp and then rising to almost 20\% towards the end of the reads. It should not have happened in ideal case (compare with a \href{https://www.bioinformatics.babraham.ac.uk/projects/fastqc/good_sequence_short_fastqc.html#M10}{good FastQC report example}). The only explanation I came up with is that the insert size turned out to be less than expected (Fig. \ref{Eve_deep_fastqc_tech}C). So, we need to get rid of these adapter fragments, or they can significantly slow down and worsen \textit{de novo} assembly.
+
+\begin{figure}[H]
+\includegraphics[width=\linewidth]{figs/Eve_deep_fastqc_tech}
+\caption{Characteristics of \textit{E. verrucosus} sequencing reads. Shown is MultiQC summary of FastQC analysis.} %350x350 px exported
+\label{Eve_deep_fastqc_tech}
+\end{figure}
+
+There are other characteristics that reflect more 'biological' parameters of the data. The plot of GC content shows a clearly multimodal distribution (Fig. \ref{Eve_deep_fastqc_composition}A), which is quite expected for an RNA sequencing library (while for genome sequencing we would expect a quasi-normal distribution). But GC-poor peaks (for example, the one around 30\% GC) might be giving away the presence of bacteria. We'll check it later (Sections \ref{Filtering} and \ref{annotation}). Finally, FastQC can estimate the amount of repeated (overrepresented) sequences. In R1 reads, there are 5-10\% of those, while in R2 reads, about one quarter of the. This difference between R1 and R2 reads suggests that the data are strand specific (but better check it later).
+In addition, FastQC provides a list of top 25 overrepresented sequences. They are not shown for the sake of clarity, but quick web BLAST identified most sequences checked as Gammaridea rRNAs (including mitochondrial mRNAs). So, we definitely need to remove rRNA sequences before the assembly.
+
+
+\begin{figure}[H]
+\includegraphics[width=\linewidth]{figs/Eve_deep_fastqc_composition}
+\caption{Characteristics of \textit{E. verrucosus} sequencing reads continued. Shown is MultiQC summary of FastQC analysis.} %350x350 px exported
+\label{Eve_deep_fastqc_composition}
+\end{figure}
+		
+
+We can finally start working on the data.
+
+
+		
+\section{Preparing reads for \textit{de novo} assembly}
+
+\subsection{Trimming}
+
+Trimming was done with \verb|trim_galore| (with a bit of bash tricks):
+
+\begin{verbatim}
+	find  -wholename "*deep*/*_R1.fastq.gz" | cut -d "R" -f1 | parallel -j 10 \
+	$apps/trim_galore_zip/trim_galore --illumina --paired --fastqc --trim1    \
+	-o trimmed / {}R1.fastq.gz {}R2.fastq.gz
+\end{verbatim}
+
+Data for \textit{E.~verrucosus} deep sequencing reads are shown in this figure and thereafter, unless indicated otherwise. However, all the other reads were processed with the same pipeline, and results were similar.
+
+In this command, \verb|trim_galore| runs fastqc. According to MultiQC summary, \textit{no samples found with any adapter contamination \textgreater 0.1\%}. Thus, trimming worked, let's go on.
+
+\subsection{Filtering} \label{Filtering}
+
+We have solved the adapter problem, but rRNA sequences are still there. 
+To get rid of rRNA I tried sortmerna (\cite{Kopylova2012}), which should be tailored right for this purpose, but without much success. To be honest, I couldn't get it running on my data and was deeply unsatisfied with the manual.
+
+So, I used bowtie2 (\cite{Langmead2012}). The latest version of bowtie2 is a very powerful tool. 
+But before this, we need a database of (ideally) rRNA sequences of our species. Of course, we do not have one, so the following set rRNA sequences were used to sort out their \textit{Eulimnogammarus} or \textit{Gammarus} homologs: 
+		\begin{itemize}
+		\item \href{https://www.ncbi.nlm.nih.gov/nuccore/KF690638.1}{KF690638.1}: \textit{Eulimnogammarus verrucosus} mitochondrion, complete genome: 14410--13791 (12S);
+		\item \href{https://www.ncbi.nlm.nih.gov/nuccore/KF690638.1}{KF690638.1} \textit{Eulimnogammarus verrucosus} mitochondrion, complete genome: 12757--13738 (16S);
+		\item \href{https://www.ncbi.nlm.nih.gov/nuccore/AF419224.1}{AF419224.1} \textit{Eulimnogammarus obtusatus} 18S small subunit ribosomal RNA gene, complete sequence; 
+		\item \href{https://www.ncbi.nlm.nih.gov/nuccore/AF419223.1}{AF419223.1} \textit{Parapallasea lagowski} 18S small subunit ribosomal RNA gene, complete sequence
+		\item \href{https://www.ncbi.nlm.nih.gov/nuccore/AY926773.1}{AY926773.1} \textit{Eulimnogammarus verrucosus} 18S ribosomal RNA gene, partial sequence (1--747); 
+		\item \href{https://www.ncbi.nlm.nih.gov/nuccore/EF582973.1}{EF582973.1} \textit{Gammarus nekkensis} voucher 511 28S ribosomal RNA gene, partial sequence (1--1333);
+		\item \href{https://www.ncbi.nlm.nih.gov/nuccore/FJ422963.1}{FJ422963.1} \textit{Gammarus wilkitzkii} 18S ribosomal RNA gene, partial sequence; internal transcribed spacer 1, 5.8S ribosomal RNA gene, and internal transcribed spacer 2, complete sequence; and 28S ribosomal RNA gene, partial sequence (1--374);
+		\item \href{https://www.ncbi.nlm.nih.gov/nuccore/JF965799.1}{JF965799.1} \textit{Gammarus sp.} 12 ZH-2011 voucher SLOTAD2 28S ribosomal RNA gene, partial sequence (1--1265); 
+		\item \href{https://www.ncbi.nlm.nih.gov/nuccore/KF586544.1}{KF586544.1} \textit{Dorogostaiskia parasitica hanajevi} voucher MZH:53197 28S ribosomal RNA gene, partial sequence (1--965);
+		\item \href{https://www.ncbi.nlm.nih.gov/nuccore/KY617162.1}{KY617162.1} \textit{Niphargus dimorphus} isolate NA146 28S ribosomal RNA gene, partial sequence (1--1161);
+		\item \href{https://www.ncbi.nlm.nih.gov/nuccore/KT180191.1}{KT180191.1} \textit{Jesogammarus hebeiensis} voucher IZCASIA1291 28S ribosomal RNA gene, partial sequence (1--1268);
+		\item \href{https://www.ncbi.nlm.nih.gov/nuccore/DQ464759.1}{DQ464759.1} \textit{Hyalella azteca} haplotype 118 28S ribosomal RNA gene, partial sequence (1--1389).
+		\end{itemize}
+
+By the way, is it true that there are no complete 28S sequences from amphipods in the public databases? 1.4 kb of the \textit{H. azteca} sequence was the longest I was able to find.
+		
+		These sequences were joined in a multifasta file and indexed as a bowtie2 database: \\
+		\verb|bowtie2-build Gammaridae_rRNA.fa Gamm_rrna_db|,
+		and then all deep sequencing reads were aligned to this reference:
+
+\bigskip 
+		\begin{verbatim}
+		for sample in `ls $reads/trimmed/*R1*.fq.gz` 
+		do dir="$reads/trimmed/"; \
+		base=$(basename $sample "R1_val_1.fq.gz"); \
+		bowtie2 -x $DE/Gamm_rrna_db \
+		-1 ${dir}/${base}R1_val_1.fq.gz \
+		-2 ${dir}/${base}R2_val_2.fq.gz \
+		--very-sensitive-local --met-file clean4/${base}_metrics.txt \
+		--un-conc-gz clean4/${base}_clean.fastq.gz --al-conc-gz \
+		clean4/${base}.rrna.fastq.gz -p 11 -S clean4/${base}.sam
+		done
+		
+		
+		\end{verbatim}
+		
+After this, a new FastQC check clearly shows that the number of overrepresented sequences dropped (at Fig. \ref{Eve_overrep_raw_vs_clean}, clean reads are shown in darker colors while data for raw reads are shown in lighter colors). However, I was not able to remove all repeated sequences. The remaining repeats still blast to Gammaridae rRNA, but couldn't get much better (the results shown are after three rounds of expanding the rRNA database with new sequences), so I decided to stop at this point and try assembling. 
+
+\begin{figure}[H]
+\includegraphics[width=\linewidth]{figs/Eve_overrep_raw_vs_clean}
+\caption{Overrepresented sequences in \textit{E. verrucosus} sequencing reads after trimming and sorting out rRNA. This plot was reproduced with the ggplot2 package for R based on the MultiQC summary of FastQC analysis and designed to roughly reproduce the style for easier comparison with Fig. \ref{Eve_deep_fastqc_composition}A.} %350x350 px exported
+\label{Eve_overrep_raw_vs_clean}
+\end{figure}
+
+It is worth noting that after filtering out rRNA, the low C/G peaks are almost gone, and the distribution became more symmetric (Fig. \ref{Eve_clean_GC}).
+		
+\begin{figure}[H]
+\includegraphics[width=\linewidth]{figs/Eve_clean_GC}
+\caption{Distribution of G/C content in \textit{E. verrucosus} sequencing reads before and after trimming and sorting out rRNA. The plots were created with MultiQC. A reproduces \ref{Eve_deep_fastqc_composition}A.} %350x350 px exported
+\label{Eve_clean_GC}
+\end{figure}
+		
+Now we have less data but I believe that they are now better suited for assembly. Absence of adapters and less rRNA should speed up the assembly and probably improve its quality. The first assumption can be easily proved, as assembly of raw reads repeatedly failed with resources I have access to (\verb|12 cores, 64 Gb RAM, Ubuntu 14.04.1, kernel 4.4.0-81-generic|). For this reason, the second assumption could not be tested. To be honest, failure was observed with the previous version of Trinity (2.2), but do not really want to waste time for this check...
+
+
+\subsection{Read error correction} \label{error_correction}
+
+In the case of separate assemblies for each species (\texttt{EveBCdTP1\_cor, EcyBCdTP1\_cor}, GlaBCdTP1\_cor), I applied read error correction; otherwise, the assembly run \textgreater 2 weeks. Here is an example command:
+
+\begin{verbatim}
+for sample in `ls $reads/clean4/Sample_Ecy*clean.fastq.1.gz`
+do dir="$reads/clean4/"
+base=$(basename $sample "1.gz")
+perl $apps/rcorrector/run_rcorrector.pl \
+-1 ${dir}/${base}1.gz -2 ${dir}/${base}2.gz \
+-t 9 -od $reads/corr
+done
+
+\end{verbatim}
+
+
+%\newpage
+
+\section{\textit{De novo} transcriptome assembly} \label{assembly}
+
+\subsection{Assembly based on the deep \textit{E.~verrucosus} sequencing reads}
+
+	The main \textit{de novo} assembly was based on \textit{E. verrucosus} 5 deep-sequenced samples (3 condition groups: control, Cd, elevated temperature; see Table \ref{conditions}). I selected these data to make the first assembly, as it should be less heterogeneous than an assembly of all the remaining data (5 animals \textit{vs.} $\sim$60 ones). 
+%	This assembly might be ... and in addition, we need to use the deep sequencing reads somehow ;)
+				
+The assembly was done with Trinity. %I know there are many alternatives but...
+	
+Now, let's return to the clear difference in the number of repeated sequences between R1 and R2 reads. These data suggests that the library was generated with a strand specific protocol but do not prove it. However, Trinity provides a nice script to check the strandedness of the assembly (\url{https://github.com/trinityrnaseq/trinityrnaseq/wiki/Examine-Strand-Specificity}).
+
+So, I assembled the data without specifying library type:
+
+\begin{verbatim}
+$apps/trinityrnaseq-Trinity-v2.4.0/Trinity --seqType fq \ --max_memory 50G \
+--left $reads/clean4/Vr*clean.fastq.1.gz --right $reads/clean4/Vr*clean.fastq.2.gz \
+--CPU 11 --output Ever_deep_trinity --bypass_java_version_check
+\end{verbatim}
+
+ Then, the assembly to the analysis of library type (Fig. \ref{strand_specificity}A). Comparison of this result with three examples provided by Trinity (Fig. \ref{strand_specificity}B-D) clearly shows that our data are probably strand-specific but assembled as non-strand-specific.
+
+\begin{figure}[H]
+\includegraphics[scale=.6]{figs/strand_specificity}
+\caption{Comparison of \textit{E. verrucosus} assemblies and examples  provided by Trinity by distribution of read orientation (the statistics is) \texttt{(plus\_strand - minus\_strand) / total}. Top cumulative values are shown along the horizontal axis. For more information on the script please see the \href{https://github.com/trinityrnaseq/trinityrnaseq/wiki/Examine-Strand-Specificity}{help page}. }
+\label{strand_specificity}
+\end{figure}
+
+Thus, our data should be assembled as strand-specific. Illumina protocols should correspond to FR library type for Trinity.
+
+\begin{verbatim}
+$apps/trinityrnaseq-Trinity-v2.4.0/Trinity --seqType fq  --max_memory 50G \
+ --left $reads/clean4/Vr*clean.fastq.1.gz --right $reads/clean4/Vr*clean.fastq.2.gz \
+ --CPU 11 --output Ever_deep_trinity --bypass_java_version_check \
+ --SS_lib_type FR
+\end{verbatim}
+
+Now the distribution of reads (Fig. \ref{strand_specificity}B) looks more like it should (even though it does not look as clean as the example provided at Figure \ref{strand_specificity}C, and I don't know why; the only idea I have is that I used only one set of the initial R1/R2 reads (not all 5 used for the assembly) for alignment to save time). 
+
+\subsection{Separate assemblies for each species (without deep sequencing reads)}
+
+We made separate assemblies for each of the 3 species with about 1/4 of the reads for each species (the first sample for each condition was selected). Reads were subjected to rcorrector to reduce complexity (see section \ref{error_correction}). An example command for \textit{E.~cyaneus} is shown here (analogous commands were run for each species)
+
+\begin{verbatim}
+$apps/trinityrnaseq-Trinity-v2.4.0/Trinity --seqType fq --max_memory 50G \
+ --left $reads/corr/Sample_Ecy*_1*fastq.1.cor.fq.gz \ 
+ --right $reads/corr/Sample_Ecy*_1*fastq.2.cor.fq.gz \ 
+ --CPU 9 --output EcyBCdTPB1_cor_trinity --bypass_java_version_check \
+ --SS_lib_type FR
+\end{verbatim}
+
+\subsection{Assembly quality control}
+
+Basic assembly metrics were estimated with TransRate and BUSCO (Table \ref{assembly_stat}). For each species, our assemblies look better than the published ones (\cite{Naumenko2017}), as they contain more genes of the Arthropoda gene set. In addition, our assemblies are approximately 10x large, which is quite expected, as we had more raw data. 
+
+However, we should note that the published assemblies were filtered for contigs with top blast hits outside of Arthropoda (\cite{Naumenko2017}). To make proper comparison, we should similarly filter out contamination and perform the comparison again. Filtering was done on the basis of annotation results (see Section \ref{annotation}) with bash / R / python faidx. The results are included into Table \ref{assembly_stat}.
+
+% %\textcolor{red}{Add here data on the newest assemblies}
+
+\begin{table}[H]
+\caption{Summary statistics of assemblies obtained compared with the published \textit{E.~verrucosus}, \textit{E.~cyaneus} and \textit{G.~lacustris} transcriptome assemblies (\texttt{gam42.1}, \texttt{gam42.3} and \texttt{gam3.1}, respectively; \cite{Naumenko2017}).} % % % % % % % % % % %\textcolor{red}{analyze and add data for the other Naumenko assemblies (\#todo)}} % and the best of the assemblies available so far. }
+
+
+\label{assembly_stat}
+\setlength{\tabcolsep}{4pt}
+%\begin{tabular}{m{3.5cm}rrrrrr}
+%\texttt{assembly} & n\_seqs & largest & n\_bases & len & \% GC & BUSCO completeness \\  \hline 
+%\texttt{EveBCdT\_deep} & 960,103 & 22,898 & 404,498,571 & 421 & 45.1 & \texttt{C:89.2\%, F: 8.6\%, M: 2.2\%} \\
+%\texttt{EveBCdT\_deep\_ decontaminated} & & & & & & \texttt{C: \%, D: \%, M: \%} \\
+%\texttt{EveBCdTP1\_cor} & 790,102 & 22,553 & 359,353,035 & 455 & 43.2 & \texttt{C: \%, D: \%, M: \%} \\
+%
+%%TrinityBmerged\_edited & 288,171 & 16,333 & 139,495,783 & 484 & 46 & \\ % %
+%\texttt{gam42.1} & 102,163 & 16,836 & ~~67,370,301 & 659 & 45.5 & \texttt{C: \%, D: \%, M: \%}83.9 \\ \cdashline{1-7}
+%\texttt{EcyBCdP\_1\_cor} & 1,070,909 & 23,639 & 482,300,499 & 450 & 43.5 & \texttt{C: \%, D: \%, M: \%}92.3 \\
+%\texttt{EcyBCdTP1\_cor\_ \linebreak decontaminated} &&&&&& \texttt{	C:92.0\%, D:54.5\%, F: 2.2\%} \\
+%EcyB24 & & & & & & \texttt{C:62.1\%, F:24.8\%, M:13.1\%} \\
+%EcyB6 & & & & & & \texttt{C:56.5\%, F:27.3\%, M:16.2\%} \\
+%EcyT12 & & & & & & \texttt{C:40.5\%, F:29.4\%, M:30.1\%} \\
+%EcyT24 & & & & & & \texttt{C:58.8\%, F:27.5\%, M:13.7\%} \\
+%gam42.3 & 81,926 & 15,873 & 54,415,476 & 665 & 44.5 & \texttt{C: \%, D: \%, M: \%}64.0 \\ \cdashline{1-7}
+%GlaBCdP\_1\_cor & 875,485 & 23,666 & 404,303,543 & 462 & 43.8 & \texttt{C: \%, D: \%, M: \%}92.3 \\
+%gam3.1 & 73,340 & 13,612 & 56,238,647 & 767 & 45.1 & \texttt{C: \%, D: \%, M: \%}68.0 \\ \cdashline{1-7}
+
+
+\begin{tabular}{m{3.5cm}rrrrrrr}
+\multirow{2}{*}{Assembly} & \multirow{2}{*}{n\_seqs} & \multirow{2}{*}{largest} & \multirow{2}{*}{n\_bases} & \multirow{2}{*}{\%GC} & \multicolumn{3}{c}{\%BUSCO} \\
+ &  &  &  &  & Complete & Fragmented & Missing \\ \cdashline{1-8}
+EveBCdT\_deep & 960,103 & 22,898 & 404M & 45.1 & 89.2 & 8.6 & 2.2 \\
+EveBCdT\_deep\_ decontaminated & 861,420 & 22,898 & 365M & 45.4 & 88.8 & 8.9 & 2.3 \\
+EveBCdTPB1\_cor & 790,102 & 22,553 & 359M & 43.2 & 91.8 & 6.4 & 1.8 \\
+EveBCdTP1\_cor\_ decontaminated & 691,272 & 22,553 & 316M & 43.6 & 91.2 & 6.8 & 2 \\
+gam42.1 & 102,163 & 16,836 & 67M & 45.5 & 71 & 12.9 & 16.1 \\ \cdashline{1-8}
+EcyBCdTPB1\_cor & 1,070,909 & 23,639 & 482M & 43.5 & 92.3 & 5.6 & 2.1 \\
+EcyBCdTP1\_cor\_ decontaminated & 958,457 & 23,639 & 430M & 43.8 & 92 & 5.8 & 2.2 \\
+gam42.3 & 81,926 & 15,873 & 54M & 44.5 & 64 & 14.1 & 21.9 \\ \cdashline{1-8}
+GlaBCdTPB1\_cor & 875,485 & 23,666 & 404M & 43.8 & 92.9 & 5.8 & 1.3 \\
+GlaBCdTP1\_cor\_ decontaminated & 825,150 & 23,666 & 379M & 44 & 92.5 & 6 & 1.5 \\
+gam3.1 & 73,340 & 13,612 & 56M & 45.1 & 68 & 14.1 & 17.9 \\ \cdashline{1-8}
+\end{tabular}
+
+\bigskip
+
+\begin{small}
+n\_seqs, total number of contigs; largest, length of the larges contig (bases); n\_bases, total number of bases in the assembly; mean\_len, total contig length; \% BUSCO, percent of conservative genes from \texttt{arthropoda\_odb9} database found in the corresponding assembly with BUSCO. 
+\end{small}
+\end{table}
+
+
+%\newpage 
+
+\section{Transcriptome annotation} \label{annotation}
+
+\subsection{Diamond}
+
+To get information about the proteins encoded by the contigs, I annotated the assembly with diamond (it is functionally analogous to blast but runs incomparably faster). 
+
+\begin{verbatim}
+diamond blastx --db $databases/nrd.dmnd \
+--taxonmap $databases/prot.accession2taxid.gz 
+--query $assemblies/EveBCd6T24T_deep_FR.fasta \
+--out EveBCd6T24T_deep_FR.diamond.tsv --threads 9 \ 
+--sensitive --max-target-seqs 1 \
+-f 6 qseqid sseqid pident length mismatch gapopen qstart qend \
+sstart send evalue bitscore staxids stitle salltitles
+\end{verbatim}
+
+It is worth noting that the newest diamond versions allow not only blast-like alignment but also quite easy taxonomic assignation. About 22\% of the sequences were assigned to some hits from NCBI with this methods. Then, it was possible to summarize taxonomic assignations with the NCBI Taxonomy browser (\url{https://www.ncbi.nlm.nih.gov/Taxonomy/TaxIdentifier/tax_identifier.cgi}) and build an approximate representation of the organisms to which the contigs probably belong. For this, one of the three highest taxonomy levels was chosen for each contig with an in-house R script. 
+
+Most of the contigs (\textgreater93\%) belong to Eukaryota (Fig. \ref{taxonomy}, leftmost bar); thus, bacterial contamination is quite low. Quite surprisingly, though, about 40\% of the sequences belong to Alveolata / Ciliophora, depending on the taxonomic level we cut at (middle and right bars, respectively), meaning that almost half of the identifiable sequences comes from ciliates. 
+
+
+\begin{figure}[H]
+\includegraphics[scale=1]{figs/taxonomy}
+\caption{Taxonomic assignation of contigs of the \texttt{EveBCdT\_deep} assembly. Groups with $\textless$5\% representation were combined to 'Other'.}
+\label{taxonomy}
+\end{figure}
+
+Other \textit{Eulimnogammarus} assemblies are similar in terms of contamination, while the \textit{G.~lacustris} assembly has a smaller proportion of Ciliophora reads (Fig. \ref{all_assemblies_taxa}). Of course, these data do not allow us to draw any conclusions, but if this difference (larger proportion of ciliates in Baikal species) reflects some natural tendency based on, say, body size or ecological characteristics, it might be quite interesting. 
+
+\begin{figure}[H]
+\includegraphics[scale=1]{figs/all_assemblies_taxa}
+\caption{Taxonomic assignation of contigs. Groups with $\textless$5\% representation were combined to 'Other'. The leftmost column is the same as the rightmost column at Fig. \ref{taxonomy}}
+\label{all_assemblies_taxa}
+\end{figure}
+
+So far, I haven't done anything with the contigs originated from ciliates or with those not identified, but let us remember this information and return to it when speaking about differential expression. 
+
+\subsection{Trinotate}
+
+I also tried the full \href{https://trinotate.github.io/}{Trinotate} pipeline, which is suggested by the Trinity authors. It includes blasting to uniprot and adds GO terms for some contigs. Diamond results were also included here (but unfortunately, Trinotate includes only best hit and not the full title). 
+
+\small{
+\begin{verbatim}
+export TRINOTATE_HOME='$apps/Trinotate-3.0.2/'
+
+blastx -query EveBCd6T24T_deep_FR.fasta -db $TRINOTATE_HOME/admin/uniprot_sprot.pep \
+-num_threads 8 -max_target_seqs 1 -outfmt 6 > blastx.outfmt6
+
+#Transdecoder: find long ORFs
+$apps/TransDecoder-5.0.1/TransDecoder.LongOrfs -t EveBCd6T24T_deep_FR.fasta 
+$apps/TransDecoder-5.0.1/TransDecoder.Predict -t EveBCd6T24T_deep_FR.fasta
+
+#blast to common databases
+blastp -query EveBCd6T24T_deep_FR.fasta.transdecoder_dir/longest_orfs.pep \
+ -db $TRINOTATE_HOME/admin/uniprot_sprot.pep -num_threads 10 -max_target_seqs 1 \
+ -outfmt 6 > blastp.outfmt6
+hmmscan --cpu 8 --domtblout 
+$apps/signalp-4.1/signalp -f short -n signalp.out \ 
+ EveBCd6T24T_deep_FR.fasta.transdecoder.pep >EveBCd6T24T_deep_FR.fasta.signalp.out
+$apps/tmhmm-2.0c/bin/tmhmm --short < EveBCd6T24T_deep_FR.fasta.transdecoder.pep \
+ > EveBCd6T24T_deep_FR.fasta.tmhmm.out
+$apps/trinityrnaseq-Trinity-v2.4.0/util/support_scripts/get_Trinity_gene_to_trans_map.pl \
+EveBCd6T24T_deep_FR.fasta >  EveBCd6T24T_deep_FR.fasta.gene_trans_map
+
+#initiated an SQL database
+$TRINOTATE_HOME/Trinotate $TRINOTATE_HOME/admin/Trinotate.sqlite init \
+ --gene_trans_map EveBCdT_deep_FR.fasta.gene_trans_map \
+ --transcript_fasta EveBCd6T24T_deep_FR.fasta \
+ --transdecoder_pep EveBCd6T24T_deep_FR.fasta.transdecoder.pep
+#loaded it with data
+$TRINOTATE_HOME/Trinotate $TRINOTATE_HOME/admin/Trinotate.sqlite \
+ LOAD_swissprot_blastp  blastp.outfmt6
+$TRINOTATE_HOME/Trinotate $TRINOTATE_HOME/admin/Trinotate.sqlite \ 
+ LOAD_tmhmm EveBCd6T24T_deep_FR.fasta.tmhmm.out
+$TRINOTATE_HOME/Trinotate $TRINOTATE_HOME/admin/Trinotate.sqlite \ 
+ LOAD_signalp EveBCd6T24T_deep_FR.fasta.signalp.out
+$TRINOTATE_HOME/Trinotate $TRINOTATE_HOME/admin/Trinotate.sqlite \
+ LOAD_swissprot_blastx blastx.outfmt6
+$TRINOTATE_HOME/Trinotate $TRINOTATE_HOME/admin/Trinotate.sqlite \
+ LOAD_custom_blast --outfmt EveBCd6T24T_deep_FR.diamond.tsv --prog blastp --dbtype nr 
+
+#And finally, we have a report
+$TRINOTATE_HOME/Trinotate $TRINOTATE_HOME/admin/Trinotate.sqlite report \ 
+ >EveBCd6T24T_deep_FR.gff
+\end{verbatim}
+}
+
+So, Trinotate provided us with a gff file for the assembly (I have not used it so far, but it might still be useful). 
+
+%allow chapter start at the same page
+%{\let\clearpage\relax \chapter{Alignment to the reference assembly?!}
+% or \chapter{Quality control} if you don't need it
+\section{Transcript quantification}
+
+\subsection{Common reference assembly}
+
+The first approach I used was to use the available \textit{E. verrucosus} deep read assembly as the common reference.
+
+Trinity has several wrapper scripts for \href{https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Transcript-Quantification}{transcript quantification }and  \href{https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Differential-Expression}{differential expression}, but I decided to use one of the tools, Salmon, directly, as the latest version of this tool is newer than that provided by Trinity and also provides finer tuning. 
+
+Salmon is fast (quantification took ~30 minutes per sample compared with ~8h per sample for bowtie2-based code).
+
+First, the assembly was indexed:
+\begin{verbatim}
+$apps/Salmon-latest_linux_x86_64/bin/salmon index 
+-t $assemblies/EveBCd6T24T_deep_FR.fasta -i EveBCd6T24T_deep.index
+\end{verbatim}
+
+Then, all raw reads were mapped to this index with \verb|salmon quant|: 
+
+\begin{verbatim}
+for sample in `ls $transcriptome_raw/Sample*/*R1.fastq.gz`;
+ do base=$(basename  $sample _R1.fastq.gz); dir=$(dirname $sample); \
+$apps/Salmon-latest_linux_x86_64/bin/salmon quant -i EveBCd6T24T_deep.index/ -l ISF \
+-1 $dir/${base}_R1.fastq.gz -2 $dir/${base}_R2.fastq.gz -p 9 -o gc/$base.quant.s --gcBias; \
+done 
+\end{verbatim}
+
+The \verb|ISF| option defines library type, and using \verb|--gcBias| is  recommended by the authors of the program.
+
+%\begin{figure}[H]
+\begin{wrapfigure}[17]{r}{8cm}
+\includegraphics[scale=0.75]{figs/mapping_Eve_deep}
+\caption{Alignment rate for each sample, grouped by species. Please note that the vertical axis is truncated. All pairwise differences are statistically significant at 0.05 level (pairwise Wilcoxon rank sum test with Holm correction).}
+\label{mapping_Eve_deep}
+\end{wrapfigure}
+
+Even though Salmon uses quasi-mapping instead of real alignment, it also outputs statistics on the proportion of reads of each particular sample "aligned" (mapped) to the reference assembly. These parameters are summarized at Fig. \ref{mapping_Eve_deep}. The results (about 50\% of reads are aligned in each case, with the best alignment seen for \textit{E.~verrucosus}, lower alignment rate for \textit{E.~cyaneus} and the lowest alignment rate for \textit{G.~lacustris}), nicely corresponds to the 40-50\% alignment rate to the rRNA database seen on the cleanup stage and phylogenetic relationship of the species of interest. I believe that these results mean that we can use quantification by this assembly to interpret biological responses to stimuli in both \textit{Eulimnogammarus} species with almost equal confidence, while in the case of \textit{G.~lacustris} we should be more cautious, even though these data are still useful for comparison. 
+
+
+\subsection{Species-specific reference assemblies}
+
+
+The same results for the other assemblies used as a reference. Mapping rates are quite predictable: in each case the highest alignment rate corresponds to mapping reads to the assembly of the same species (Fig. \ref{mapping_separate}).
+
+
+\begin{figure}[H]
+\noindent \includegraphics[scale=1.2]{figs/mapping_separate}
+\caption{Alignment rate for each sample, grouped by species. All pairwise differences are statistically significant at 0.05 level (pairwise Wilcoxon rank sum test with Holm correction).}
+\label{mapping_separate}
+\end{figure}
+
+
+\section{Differential expression}
+
+\subsection{Methodology}
+
+Now we know expression values for each of hundreds thousands transcripts. However, now we need to know which are differentially expressed under particular conditions. This was done with the DESeq2 R package.
+
+Below is some example code. 
+The functions are too wordy to list them here, so please visit this \href{https://github.com/drozdovapb/code_chunks/blob/master/RNA_seq_DE/DESeq_decontaminate.R}{github page} if you are interested. In a nutshell, the functions: 
+\begin{itemize}
+\item read data (salmon output);
+\item perform differential expression analysis with DESeq2, write tables and draw volcano plots;
+\item add annotation data and then: 
+\item filter out non-metazoan hits or
+\item filter only known Metazoa hits.
+\end{itemize}  
+
+\small{
+\begin{verbatim}
+#packages
+library(DESeq2); library(tximport); library(readr); library(ggplot2)
+
+#Important variables that should be located outside the presumable function
+#dir <- "$DE/salmon/eve_deep"; setwd(dir) #change in to ur path
+source("DESeq_decontaminate.R") #source functions (github url above)
+thisassembly <- "EveBCdT_deep"
+#get taxonomic assignation for each contig for further filtering
+getTaxonomy(paste0(thiassembly,".taxid"))
+qq <- matchTaxonomy(paste0(thiassembly,"_taxreport.txt"), thiassembly)
+#get back to the target working directory
+setwd(dir)
+
+#Analysis
+theseconditions <- c("B12", "T12")
+thispecies <- "Eve"; perform.de(dir, thispecies, theseconditions)
+thispecies <- "Ecy"; perform.de(dir, thispecies, theseconditions)
+thispecies <- "Gla"; perform.de(dir, thispecies, theseconditions)
+#other conditions left out for clarity
+\end{verbatim}
+}
+
+
+Now we are ready to explore differential expression. These results are summarized in the figures below. 
+They mostly feature volcano plots, a standard way to visualize differential expression. Volcano plots are a type of scatter plots showing fold change (along the horizontal axis) \textit{vs.} significance (along the vertical axis). Naturally, we are interested in the contigs that correspond in the upper left / upper right corners. The former are mRNA that are downregulated upon the respective condition, while the latter are upregulated. However, we are mostly interested in the response of the amphipod itself (not in its symbionts) and in the transcripts with known function. These filtered are labeled as 'Metazoa' at the figures.
+
+
+But before we uncover these transcripts, we need a few more sanity checks. 
+
+\subsection{Comparing different reference assemblies}
+
+First, below I am showing only those comparisons that were done using the \texttt{EveBCdT\_deep} alignment as a common reference, as the results are mostly similar regardless of the assembly used as the reference. An example is shown on Fig. \ref{diff_references}. 
+
+\begin{figure}[H]
+\noindent \includegraphics[width=\linewidth]{figs/diff_references.png}
+\caption{Differential expression analysis results for elevated temperature (10LT24) vs. control.}
+\label{diff_references}
+\end{figure}
+
+
+\subsection{Comparing controls}
+Second, we can compare samples under the control conditions (6 \textdegree C) at different times and experiments. Here are some of the possible pairwise comparisons (Fig. \ref{compare_controls}). 
+
+These volcano plots look much flatter then the real comparisons, but still some of them (both within and between experiments) show a number of differentially expressed contigs. I don't think we should adjust the threshold p-value or fold change, as these changes probably reflect some kind of biological variation. However, these differences are definitely something to bear in mind when making conclusions. 
+
+\begin{figure}[H]
+\noindent \includegraphics[width=0.9\linewidth]{figs/compare_controls.png}
+\caption{Differential expression in different controls (6 \textdegree C).}
+\label{compare_controls}
+\end{figure}
+
+\bigskip
+
+\subsection{The main results}
+
+Finally, here are the results for the all comparisons for all species (Figs \ref{10t3_combined}-\ref{p24_combined}), using the \texttt{EveBCdT\_deep}  assembly as a common reference. 
+
+
+All figures are organized in the same way. 
+\begin{itemize}
+\itemsep -3pt
+\item The upper row features DE results for \textit{all} contigs.
+\item The second row shows the principal component analysis for the samples. This method is actually used to find the most important variable(s) explaining the structure of the data, but here we can use it to  illustrate how many samples of each group we have and whether these samples form clear clusters.
+\item The third row the same volcano plot, but now with the contamination (Ciliata contigs \textit{etc.}) removed.
+\item The last row shows only the dots corresponding to the known Metazoa transcripts. 
+\end{itemize}
+
+\bigskip
+
+\textbf{Please note} that these figures can be explored interactively with, for example, \href{https://plot.ly/create/}{plot.ly} web interface (copy \texttt{log2FoldChange}, \texttt{-log10padj} and \texttt{V14} to the table above the graph area and set them as X, Y and hover text, respectively). The same information is also provided as tables. 
+
+
+
+\begin{figure}[H]
+\hskip -5mm \includegraphics[scale=.75]{figs/10LT3_combined.png}
+\caption{Differential expression analysis results for elevated temperature (10LT3) vs. control. Rows: volcano plot for all genes, PCA plot for all genes. Here should be a large amount of text... }
+\label{10t3_combined}
+\end{figure}
+
+
+\begin{figure}[H]
+\hskip -5mm \includegraphics[scale=.75]{figs/10LT24_combined.png}
+\caption{Differential expression analysis results for elevated temperature (10LT3) vs. control. Everything else same as above.}
+\label{10lt24_combined}
+\end{figure}
+
+\begin{figure}[H]
+\hskip -5mm \includegraphics[scale=.75]{figs/T12_combined.png}
+\caption{Differential expression analysis results for elevated temperature (12~\textdegree C) vs. control. Everything else same as above.}
+\label{t12_combined}
+\end{figure}
+
+\begin{figure}[H]
+\hskip -5mm \includegraphics[scale=.75]{figs/T18_combined.png}
+\caption{Differential expression analysis results for elevated temperature (18~\textdegree C) vs. control. Everything else same as above.}
+\label{t18_combined}
+\end{figure}
+
+\begin{figure}[H]
+\hskip -5mm \includegraphics[scale=.75]{figs/T24_combined.png}
+\caption{Differential expression analysis results for elevated temperature (24~\textdegree C) vs. control. Everything else same as above.}
+\label{t24_combined}
+\end{figure}
+
+\begin{figure}[H]
+\hskip -5mm \includegraphics[scale=.75]{figs/Cd3_combined.png}
+\caption{Differential expression analysis results for cadmium exposure (3 hours) vs. control. Everything else same as above.}
+\label{cd3_combined}
+\end{figure}
+
+\begin{figure}[H]
+\hskip -5mm \includegraphics[scale=.75]{figs/Cd24_combined.png}
+\caption{Differential expression analysis results for cadmium exposure (24 hours) vs. control. Everything else same as above.}
+\label{cd24_combined}
+\end{figure}
+
+
+\begin{figure}[H]
+\hskip -5mm \includegraphics[scale=.75]{figs/P3_combined.png}
+\caption{Differential expression analysis results for phenantrene exposure (3 hours) vs. control. Everything else same as above.}
+\label{p3_combined}
+\end{figure}
+
+
+\begin{figure}[H]
+\hskip -5mm \includegraphics[scale=.75]{figs/P24_combined.png}
+\caption{Differential expression analysis results for phenantrene exposure (24 hours) vs. control. Everything else same as above.}
+\label{p24_combined}
+\end{figure}
+
+
+\section{Possible future directions}
+
+\begin{enumerate}
+\item Time series to find genes with specific dynamic expression patterns.
+\item Gene coexpression networks to find gene hubs.
+\item Integration with genome and/or proteome data.
+\item Make better GO term or other functional summary for differentially expressed genes. 
+\item Ask more specific biological questions and answer them using these data. 
+%\item ??? (not really sure) try other strategies for assembly / quantification / differential expression to see whether the results are similar and whether we can do better;
+%\item ??? think about 28S rRNA sequence (whether we can assemble the full-length gene and whether it's worth making).
+\end{enumerate}
+
+
+\bigskip 
+%\newpage 
+
+\small{\printbibliography}
+
+\newpage %I don't know why it hides the last page but it does :( %it stopped
+
+
+
+\end{document}
+
