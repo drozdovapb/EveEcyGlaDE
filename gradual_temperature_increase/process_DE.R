@@ -114,23 +114,25 @@ Gla24 <- read.delim("Gla.isoform.counts.matrix.T24_vs_B6.DESeq2.DE_results")
     
     ggsave("RPs.png")  
   
-Ecy.RPs <- rbind(data.frame(logFC = EcyT12.RPs$log2FoldChange, temp = "T12"),
-                 data.frame(logFC = EcyT18.RPs$log2FoldChange, temp = "T18"),
-                 data.frame(logFC = EcyT24.RPs$log2FoldChange, temp = "T24"))
+Ecy.RPs <- rbind(data.frame(Species = "E. cyaneus", Gene = EcyT12.RPs$Gene, logFC = EcyT12.RPs$log2FoldChange, temperature = 12.4),
+                 data.frame(Species = "E. cyaneus", Gene = EcyT18.RPs$Gene, logFC = EcyT18.RPs$log2FoldChange, temperature = 18.0),
+                 data.frame(Species = "E. cyaneus", Gene = EcyT24.RPs$Gene, logFC = EcyT24.RPs$log2FoldChange, temperature = 24.4))
 library(coin)
 pairwise.wilcox.test(Ecy.RPs$logFC, Ecy.RPs$temp)
 
 
-Eve.RPs <- rbind(data.frame(logFC = EveT12.RPs$log2FoldChange, temp = "T12"),
-                 data.frame(logFC = EveT18.RPs$log2FoldChange, temp = "T18"),
-                 data.frame(logFC = EveT24.RPs$log2FoldChange, temp = "T24"))
+Eve.RPs <- rbind(data.frame(Species = "E. verrucosus", Gene = EveT12.RPs$Gene, logFC = EveT12.RPs$log2FoldChange, temperature = 12.4),
+                 data.frame(Species = "E. verrucosus", Gene = EveT18.RPs$Gene, logFC = EveT18.RPs$log2FoldChange, temperature = 18.0),
+                 data.frame(Species = "E. verrucosus", Gene = EveT24.RPs$Gene, logFC = EveT24.RPs$log2FoldChange, temperature = 24.4))
 pairwise.wilcox.test(Eve.RPs$logFC, Eve.RPs$temp)
 
-Gla.RPs <- rbind(data.frame(logFC = GlaT12.RPs$log2FoldChange, temp = "T12"),
-                 data.frame(logFC = GlaT18.RPs$log2FoldChange, temp = "T18"),
-                 data.frame(logFC = GlaT24.RPs$log2FoldChange, temp = "T24"))
+Gla.RPs <- rbind(data.frame(Species = "G. lacustris", Gene = GlaT12.RPs$Gene, logFC = GlaT12.RPs$log2FoldChange, temperature = 12.4),
+                 data.frame(Species = "G. lacustris", Gene = GlaT18.RPs$Gene, logFC = GlaT18.RPs$log2FoldChange, temperature = 18.0),
+                 data.frame(Species = "G. lacustris", Gene = GlaT24.RPs$Gene, logFC = GlaT24.RPs$log2FoldChange, temperature = 24.4))
 pairwise.wilcox.test(Gla.RPs$logFC, Gla.RPs$temp)
 
+library(openxlsx)
+write.xlsx(list(Ecy.RPs, Eve.RPs, Gla.RPs), file = "RP_genes.xlsx")
 
 ## by DE genes
 selectDEd <- function(tbl, threshold_p = 0.05, threshold_abslogFC = 1) {
