@@ -1,1 +1,53 @@
-Illumina universal adapter sequence was found in the end of up to 10--20% sequences and trimmed with trim_galore v0.4.1. Overrepresented sequences (mostly rRNA) were partially filtered out these sequences by aligning to a custom database of rRNA sequences of gammarid amphipods with bowtie2 v2.1.0 with the --very-sensitive-local parameter enabled, and the clean reads were dumped into new files with the --un-conc-gz option. At the next step the clean reads were subjected to read error correction with RCorrector (cloned from Github on Dec 18, 2017). Transcriptome assembly was performed with Trinity v2.4.0 (--SS_lib_type FR parameter enabled to utilize the strand specificity of the libraries). Assemblies were further filtered to include only transcripts originating from animals. For this we used diamond v0.9.10.111 and the NCBI nr protein sequence database (10 Oct 2017) to assign the best protein hit for each transcript sequence with the blastx algorithm and assign species identification. Then, the reduced set of transcripts being submitted was obtained by removing redundant sequences with the Evidentialgene pipeline v2013.07.27 and subsequently selecting only contigs with the best diamond hit to a sequence belonging to a metazoan species. Contigs probably contained adaptors were trimmed at adaptors, contigs with hits to primates were, and contigs encoding putative metallothioneins were added manually.
+## Trimming
+## Illumina universal adapter sequence found in the end of up to 10--20% sequences and trimmed with trim_galore v0.4.1.
+find  -wholename "*deep*/*_R1.fastq.gz" | cut -d "R" -f1 | parallel -j 10 \
+	$apps/trim_galore_zip/trim_galore --illumina --paired --fastqc --trim1    \
+	-o trimmed / {}R1.fastq.gz {}R2.fastq.gz
+ 
+## Overrepresented sequences (mostly rRNA) partially filtered out <= aligning to a custom rRNA database 
+## KF690638.1: Eulimnogammarus verrucosus mitochondrion, complete genome: 14410--13791 (12S);
+## KF690638.1: Eulimnogammarus verrucosus mitochondrion, complete genome: 12757--13738 (16S);
+## AF419224.1: Eulimnogammarus obtusatus 18S small subunit ribosomal RNA gene, complete sequence; 
+## AF419223.1: Parapallasea lagowski 18S small subunit ribosomal RNA gene, complete sequence
+## AY926773.1: Eulimnogammarus verrucosus 18S ribosomal RNA gene, partial sequence (1--747); 
+## EF582973.1: Gammarus nekkensis voucher 511 28S ribosomal RNA gene, partial sequence (1--1333);
+## FJ422963.1: Gammarus wilkitzkii 18S ribosomal RNA gene, partial sequence; internal transcribed spacer 1, 5.8S ribosomal RNA gene, and internal transcribed spacer 2, complete sequence; and 28S ribosomal RNA gene, partial sequence (1--374);
+## JF965799.1: Gammarus sp. 12 ZH-2011 voucher SLOTAD2 28S ribosomal RNA gene, partial sequence (1--1265); 
+## KF586544.1: Dorogostaiskia parasitica hanajevi voucher MZH:53197 28S ribosomal RNA gene, partial sequence (1--965);
+## KY617162.1: Niphargus dimorphus isolate NA146 28S ribosomal RNA gene, partial sequence (1--1161);
+## KT180191.1: Jesogammarus hebeiensis} voucher IZCASIA1291 28S ribosomal RNA gene, partial sequence (1--1268);
+## DQ464759.1: Hyalella azteca haplotype 118 28S ribosomal RNA gene, partial sequence (1--1389).
+## with bowtie2 v2.1.0:
+## build reference
+## note the --very-sensitive-local; clean reads dumped into new files with --un-conc-gz
+bowtie2-build Gammaridae_rRNA.fa Gamm_rrna_db
+for sample in `ls $reads/trimmed/*R1*.fq.gz` 
+		do dir="$reads/trimmed/"; \
+		base=$(basename $sample "R1_val_1.fq.gz"); \
+		bowtie2 -x $DE/Gamm_rrna_db \
+		-1 ${dir}/${base}R1_val_1.fq.gz \
+		-2 ${dir}/${base}R2_val_2.fq.gz \
+		--very-sensitive-local --met-file clean4/${base}_metrics.txt \
+		--un-conc-gz clean4/${base}_clean.fastq.gz --al-conc-gz \
+		clean4/${base}.rrna.fastq.gz -p 11 -S clean4/${base}.sam
+done
+
+## read error correction with RCorrector (cloned from Github on Dec 18, 2017).
+## the necessity for correction? Well, otherwise ran indefinitely long.
+for sample in `ls $reads/clean4/Sample_Ecy*clean.fastq.1.gz`
+do dir="$reads/clean4/"
+base=$(basename $sample "1.gz")
+perl $apps/rcorrector/run_rcorrector.pl \
+-1 ${dir}/${base}1.gz -2 ${dir}/${base}2.gz \
+-t 9 -od $reads/corr
+done
+
+
+## Transcriptome assembly with Trinity v2.4.0 (--SS_lib_type FR parameter enabled to utilize the strand specificity of the libraries). 
+$apps/trinityrnaseq-Trinity-v2.4.0/Trinity --seqType fq --max_memory 50G \
+ --left $reads/corr/Sample_Ecy*_1*fastq.1.cor.fq.gz \ 
+ --right $reads/corr/Sample_Ecy*_1*fastq.2.cor.fq.gz \ 
+ --CPU 9 --output EcyBCdTPB1_cor_trinity --bypass_java_version_check \
+ --SS_lib_type FR
+
+##Assemblies were further filtered to include only transcripts originating from animals. For this we used diamond v0.9.10.111 and the NCBI nr protein sequence database (10 Oct 2017) to assign the best protein hit for each transcript sequence with the blastx algorithm and assign species identification. Then, the reduced set of transcripts being submitted was obtained by removing redundant sequences with the Evidentialgene pipeline v2013.07.27 and subsequently selecting only contigs with the best diamond hit to a sequence belonging to a metazoan species. Contigs probably contained adaptors were trimmed at adaptors, contigs with hits to primates were, and contigs encoding putative metallothioneins were added manually.
